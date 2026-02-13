@@ -13,7 +13,7 @@
     --text:#c7d0d9;
     --muted:#7a8694;
 
-    /* You had --red set to green; keeping your intent as "accent" */
+    /* Accent (Mechanicus green) */
     --accent:#1f8f3a;
     --accent-rgb: 31, 143, 58;
 
@@ -45,7 +45,7 @@
     width:100vw;
     height:100vh;
     z-index:0;
-    opacity:0.40; /* was 0.32; a bit more visible */
+    opacity:0.40;
     pointer-events:none;
   }
 
@@ -65,7 +65,7 @@
   /* App shell */
   .app{
     position:relative;
-    z-index:2; /* above background */
+    z-index:2;
     min-height:100%;
     display:flex;
     flex-direction:column;
@@ -106,7 +106,6 @@
     font-size:12px;
     line-height:1.1;
   }
-
   .spacer{ flex:1; }
 
   .iconbtn{
@@ -361,7 +360,6 @@
     color: var(--muted);
     font-size:12px;
   }
-
   .sidebar .meta{
     margin-top:14px;
     font-size:12px;
@@ -412,11 +410,15 @@
 
   /* Search filtering */
   .hidden{ display:none !important; }
+
+  /* Highlight: very visible */
   mark{
-    background: rgba(var(--blue-rgb), .18);
-    color: var(--text);
-    padding:0 2px;
-    border-radius:4px;
+    background: rgba(var(--accent-rgb), .35);
+    color: #e8fff0;
+    padding: 0 3px;
+    border-radius: 4px;
+    outline: 1px solid rgba(var(--accent-rgb), .55);
+    box-shadow: 0 0 12px rgba(var(--accent-rgb), .18);
   }
 
   /* Mobile: sidebar becomes overlay drawer */
@@ -505,9 +507,7 @@
     <div class="admin-divider"></div>
     <h3>REORDER CHAPTERS</h3>
     <p class="reorder-note">Drag a chapter to change its order in the list.</p>
-    <div class="reorder-list" id="reorderList" aria-live="polite">
-      <!-- injected by JS -->
-    </div>
+    <div class="reorder-list" id="reorderList" aria-live="polite"></div>
   </div>
 </div>
 
@@ -519,9 +519,7 @@
     <div class="dtitle">CHAPTERS</div>
     <button class="iconbtn" id="closeDrawer" aria-label="Close menu">✕</button>
   </div>
-  <div class="chapters" id="chaptersDrawer">
-    <!-- injected by JS -->
-  </div>
+  <div class="chapters" id="chaptersDrawer"></div>
   <div class="meta">
     Access: Magenta-7+<br/>
     Archive Node: C-402-E / VARUN<br/>
@@ -530,7 +528,6 @@
 </aside>
 
 <div class="app">
-
   <header class="topbar">
     <div class="topbar-inner">
       <button class="iconbtn" id="openDrawer" aria-label="Open menu">☰</button>
@@ -554,9 +551,7 @@
     <!-- Desktop sidebar -->
     <aside class="sidebar" aria-label="Chapters">
       <h3>CHAPTER LIST</h3>
-      <div class="chapters" id="chaptersSidebar">
-        <!-- injected by JS -->
-      </div>
+      <div class="chapters" id="chaptersSidebar"></div>
       <div class="meta">
         Access: Magenta-7+<br/>
         Archive Node: C-402-E / VARUN<br/>
@@ -642,6 +637,7 @@ const chapters = [
 ];
 
 function renderChapters(container){
+  if(!container) return;
   container.innerHTML = chapters.map(c => `
     <a href="#${c.id}" data-target="${c.id}">
       <span class="tag">${c.tag}</span>
@@ -695,28 +691,19 @@ const openBtn = document.getElementById("openDrawer");
 const closeBtn = document.getElementById("closeDrawer");
 const backdrop = document.getElementById("backdrop");
 
-function openDrawer(){
-  document.body.classList.add("drawer-open");
-}
-function closeDrawer(){
-  document.body.classList.remove("drawer-open");
-}
+function openDrawer(){ document.body.classList.add("drawer-open"); }
+function closeDrawer(){ document.body.classList.remove("drawer-open"); }
 
-openBtn.addEventListener("click", openDrawer);
-closeBtn.addEventListener("click", closeDrawer);
-backdrop.addEventListener("click", closeDrawer);
-window.addEventListener("keydown", (e) => {
-  if(e.key === "Escape"){
-    closeDrawer();
-    closeAdmin();
-  }
-});
+if(openBtn) openBtn.addEventListener("click", openDrawer);
+if(closeBtn) closeBtn.addEventListener("click", closeDrawer);
+if(backdrop) backdrop.addEventListener("click", closeDrawer);
 
 /* ===== Search filter + highlight ===== */
 const input = document.getElementById("searchInput");
 const clearBtn = document.getElementById("clearBtn");
 let boxes = Array.from(document.querySelectorAll(".archive-box"));
 const footerEl = document.querySelector("footer");
+
 const adminPencil = document.getElementById("adminPencil");
 const adminModal = document.getElementById("adminModal");
 const adminCancel = document.getElementById("adminCancel");
@@ -724,6 +711,7 @@ const adminSave = document.getElementById("adminSave");
 const chapterTag = document.getElementById("chapterTag");
 const chapterLabel = document.getElementById("chapterLabel");
 const chapterBody = document.getElementById("chapterBody");
+
 let draggingId = null;
 let dropTargetId = null;
 
@@ -735,22 +723,26 @@ function stripMarks(node){
   });
 }
 
+/* Robust highlight (fixes "filter works but no highlight") */
 function highlightText(node, q){
   if(!q) return;
+
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(escaped, "ig");
+
   const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null);
-  const texts = [];
-  while(walker.nextNode()) texts.push(walker.currentNode);
+  const textNodes = [];
+  while(walker.nextNode()) textNodes.push(walker.currentNode);
 
-  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig");
-
-  for(const t of texts){
+  for(const t of textNodes){
     const val = t.nodeValue;
     if(!val) continue;
-    const m = val.match(re);
-    if(!m) continue;
+
+    if(!val.toLowerCase().includes(q.toLowerCase())) continue;
 
     const frag = document.createDocumentFragment();
     let last = 0;
+
     val.replace(re, (match, offset) => {
       frag.appendChild(document.createTextNode(val.slice(last, offset)));
       const mk = document.createElement("mark");
@@ -759,12 +751,15 @@ function highlightText(node, q){
       last = offset + match.length;
       return match;
     });
+
     frag.appendChild(document.createTextNode(val.slice(last)));
     t.parentNode.replaceChild(frag, t);
   }
 }
 
 function applySearch(){
+  if(!input) return;
+
   const q = input.value.trim();
   boxes.forEach(b => stripMarks(b));
 
@@ -783,23 +778,27 @@ function applySearch(){
   });
 }
 
-input.addEventListener("input", applySearch);
-clearBtn.addEventListener("click", () => {
+if(input) input.addEventListener("input", applySearch);
+if(clearBtn) clearBtn.addEventListener("click", () => {
+  if(!input) return;
   input.value = "";
   applySearch();
   input.focus();
 });
 
+/* ===== Admin modal ===== */
 function openAdmin(){
+  if(!adminModal) return;
   adminModal.classList.add("open");
   renderReorderList();
-  chapterTag.focus();
+  if(chapterTag) chapterTag.focus();
 }
 function closeAdmin(){
+  if(!adminModal) return;
   adminModal.classList.remove("open");
-  chapterTag.value = "";
-  chapterLabel.value = "";
-  chapterBody.value = "";
+  if(chapterTag) chapterTag.value = "";
+  if(chapterLabel) chapterLabel.value = "";
+  if(chapterBody) chapterBody.value = "";
 }
 
 function slugify(text){
@@ -807,12 +806,12 @@ function slugify(text){
 }
 
 function addChapter(){
-  const tag = chapterTag.value.trim() || "NEW";
-  const label = chapterLabel.value.trim();
-  const body = chapterBody.value.trim();
+  const tag = (chapterTag?.value || "").trim() || "NEW";
+  const label = (chapterLabel?.value || "").trim();
+  const body = (chapterBody?.value || "").trim();
 
   if(!label || !body){
-    chapterLabel.focus();
+    chapterLabel?.focus();
     return;
   }
 
@@ -832,20 +831,33 @@ function addChapter(){
     <p>${body.replace(/\n/g, "<br/>")}</p>
   `;
 
-  footerEl.parentNode.insertBefore(box, footerEl);
+  if(footerEl && footerEl.parentNode){
+    footerEl.parentNode.insertBefore(box, footerEl);
+  } else {
+    document.body.appendChild(box);
+  }
+
   boxes = Array.from(document.querySelectorAll(".archive-box"));
   applySearch();
   closeAdmin();
   smoothScrollTo(id);
 }
 
-adminPencil.addEventListener("click", openAdmin);
-adminCancel.addEventListener("click", closeAdmin);
-adminModal.addEventListener("click", (e) => {
+if(adminPencil) adminPencil.addEventListener("click", openAdmin);
+if(adminCancel) adminCancel.addEventListener("click", closeAdmin);
+if(adminModal) adminModal.addEventListener("click", (e) => {
   if(e.target === adminModal) closeAdmin();
 });
-adminSave.addEventListener("click", addChapter);
+if(adminSave) adminSave.addEventListener("click", addChapter);
 
+window.addEventListener("keydown", (e) => {
+  if(e.key === "Escape"){
+    closeDrawer();
+    closeAdmin();
+  }
+});
+
+/* ===== Reorder drag/drop ===== */
 function moveChapterBefore(movedId, targetId){
   if(!movedId || !targetId || movedId === targetId) return;
   const fromIndex = chapters.findIndex(c => c.id === movedId);
@@ -855,19 +867,16 @@ function moveChapterBefore(movedId, targetId){
   const insertIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
   chapters.splice(insertIndex, 0, item);
 }
-
 function moveChapterToEnd(movedId){
   const fromIndex = chapters.findIndex(c => c.id === movedId);
   if(fromIndex < 0) return;
   const [item] = chapters.splice(fromIndex, 1);
   chapters.push(item);
 }
-
 function clearDropTargets(){
   const targets = reorderList ? reorderList.querySelectorAll(".drop-target") : [];
   targets.forEach(t => t.classList.remove("drop-target"));
 }
-
 if(reorderList){
   reorderList.addEventListener("dragstart", (e) => {
     const item = e.target.closest(".reorder-item");
@@ -880,8 +889,7 @@ if(reorderList){
   reorderList.addEventListener("dragend", () => {
     draggingId = null;
     dropTargetId = null;
-    const items = reorderList.querySelectorAll(".reorder-item");
-    items.forEach(i => i.classList.remove("dragging"));
+    reorderList.querySelectorAll(".reorder-item").forEach(i => i.classList.remove("dragging"));
     clearDropTargets();
   });
 
