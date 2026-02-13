@@ -155,6 +155,8 @@
   .admin-modal.open{ display:flex; }
   .admin-panel{
     width:min(520px, 92vw);
+    max-height: 85vh;
+    overflow: auto;
     background: rgba(18,22,27,.96);
     border:1px solid var(--border);
     border-radius: var(--radius);
@@ -557,6 +559,7 @@
     <div class="admin-divider"></div>
     <h3>REORDER CHAPTERS</h3>
     <p class="reorder-note">Drag a chapter to change its order in the list.</p>
+    <p class="reorder-note">Tip: Scroll INSIDE this panel to reach “ADD REVISION” and “Export JSON”.</p>
     <div class="reorder-list" id="reorderList" aria-live="polite">
       <!-- injected by JS -->
     </div>
