@@ -721,6 +721,8 @@ function stripMarks(node){
     const text = document.createTextNode(m.textContent);
     m.replaceWith(text);
   });
+  // IMPORTANT: merges adjacent text nodes so multi-letter searches work after previous highlighting
+  node.normalize();
 }
 
 /* Robust highlight (fixes "filter works but no highlight") */
