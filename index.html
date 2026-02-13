@@ -6,26 +6,20 @@
 <title>Noosphere Archive: Magos C-402 Epsilon Varun</title>
 
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap');
+
   :root{
     --bg:#0b0d0f;
     --panel:#12161b;
     --panel2:#0f141a;
     --text:#c7d0d9;
     --muted:#7a8694;
-
-    /* Accent (Mechanicus green) */
-    --accent:#1f8f3a;
-    --accent-rgb: 31, 143, 58;
-
+    --red:#1f8f3a;
     --blue:#7fb3ff;
-    --blue-rgb: 127, 179, 255;
-
     --border:#222a33;
     --shadow: 0 10px 30px rgba(0,0,0,.35);
     --radius: 10px;
-
-    /* Offline-safe "royal" stack (no external imports) */
-    --royal: "Trajan Pro", "Garamond", "Times New Roman", serif;
+    --royal: "Cinzel", "Trajan Pro", "Garamond", "Times New Roman", serif;
   }
 
   *{ box-sizing:border-box; }
@@ -45,7 +39,7 @@
     width:100vw;
     height:100vh;
     z-index:0;
-    opacity:0.40;
+    opacity:0.32;
     pointer-events:none;
   }
 
@@ -56,16 +50,16 @@
     z-index:1;
     pointer-events:none;
     background:
-      radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,.45) 100%),
-      radial-gradient(ellipse at 20% 10%, rgba(var(--accent-rgb), .10), rgba(0,0,0,0) 55%),
-      radial-gradient(ellipse at 80% 90%, rgba(var(--blue-rgb), .08), rgba(0,0,0,0) 55%);
+      radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,.55) 100%),
+      radial-gradient(ellipse at 20% 10%, rgba(159,31,31,.10), rgba(0,0,0,0) 55%),
+      radial-gradient(ellipse at 80% 90%, rgba(127,179,255,.08), rgba(0,0,0,0) 55%);
     mix-blend-mode: normal;
   }
 
   /* App shell */
   .app{
     position:relative;
-    z-index:2;
+    z-index:2; /* above background */
     min-height:100%;
     display:flex;
     flex-direction:column;
@@ -97,7 +91,7 @@
   .brand .title{
     font-weight:800;
     letter-spacing:1px;
-    color:var(--accent);
+    color:var(--red);
     line-height:1.1;
     font-family: var(--royal);
   }
@@ -106,6 +100,7 @@
     font-size:12px;
     line-height:1.1;
   }
+
   .spacer{ flex:1; }
 
   .iconbtn{
@@ -138,8 +133,14 @@
     cursor:pointer;
     box-shadow: var(--shadow);
   }
-  .admin-pencil:hover{ border-color:#3a4a5a; }
-  .admin-pencil svg{ width:14px; height:14px; fill: currentColor; }
+  .admin-pencil:hover{
+    border-color:#3a4a5a;
+  }
+  .admin-pencil svg{
+    width:14px;
+    height:14px;
+    fill: currentColor;
+  }
 
   .admin-modal{
     position:fixed;
@@ -205,7 +206,7 @@
     cursor:pointer;
   }
   .admin-actions button.primary{
-    border-color: rgba(var(--accent-rgb), .75);
+    border-color:#2f8b48;
     color:#bfe3c7;
   }
   .admin-actions button:hover{ border-color:#3a4a5a; }
@@ -238,10 +239,12 @@
     cursor:grab;
     user-select:none;
   }
-  .reorder-item.dragging{ opacity:.4; }
+  .reorder-item.dragging{
+    opacity:.4;
+  }
   .reorder-item.drop-target{
     border-color:#3a4a5a;
-    box-shadow: 0 0 0 1px rgba(var(--blue-rgb), .22);
+    box-shadow: 0 0 0 1px rgba(127,179,255,.22);
   }
   .reorder-handle{
     font-size:12px;
@@ -350,7 +353,9 @@
     align-items:center;
     gap:10px;
   }
-  .chapters a:hover{ border-color:#33404e; }
+  .chapters a:hover{
+    border-color:#33404e;
+  }
   .chapters .tag{
     color: var(--blue);
     font-weight:700;
@@ -360,6 +365,7 @@
     color: var(--muted);
     font-size:12px;
   }
+
   .sidebar .meta{
     margin-top:14px;
     font-size:12px;
@@ -370,23 +376,32 @@
   }
 
   /* Main content */
-  main{ flex:1; min-width:0; }
+  main{
+    flex:1;
+    min-width:0;
+  }
 
   h1, h2, h3{
-    color: var(--accent);
+    color: var(--red);
     border-bottom: 1px solid #333;
     padding-bottom: 5px;
     margin: 0 0 12px 0;
     font-family: var(--royal);
   }
-  h1{ font-size: 22px; letter-spacing: 1px; }
-  h2{ font-size: 16px; margin-top: 14px; }
+  h1{
+    font-size: 22px;
+    letter-spacing: 1px;
+  }
+  h2{
+    font-size: 16px;
+    margin-top: 14px;
+  }
 
   .archive-box{
     background: rgba(18,22,27,.82);
     padding: 20px;
     margin-bottom: 16px;
-    border-left: 4px solid var(--accent);
+    border-left: 4px solid var(--red);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
   }
@@ -410,15 +425,11 @@
 
   /* Search filtering */
   .hidden{ display:none !important; }
-
-  /* Highlight: very visible */
   mark{
-    background: rgba(var(--accent-rgb), .35);
-    color: #e8fff0;
-    padding: 0 3px;
-    border-radius: 4px;
-    outline: 1px solid rgba(var(--accent-rgb), .55);
-    box-shadow: 0 0 12px rgba(var(--accent-rgb), .18);
+    background: rgba(127,179,255,.18);
+    color: var(--text);
+    padding:0 2px;
+    border-radius:4px;
   }
 
   /* Mobile: sidebar becomes overlay drawer */
@@ -477,6 +488,45 @@
     .search{ width: 56vw; }
     body{ font-size: 14px; }
   }
+  /* Revision Log */
+  .rev-list{
+    margin: 10px 0 0 0;
+    padding-left: 16px;
+    color: var(--text);
+  }
+  .rev-list li{
+    margin: 8px 0;
+    line-height: 1.4;
+  }
+  .rev-date{
+    color: var(--blue);
+    font-weight: 700;
+    margin-right: 8px;
+    white-space: nowrap;
+  }
+  .rev-note{
+    color: var(--text);
+  }
+  .rev-hint{
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Admin: small section headers */
+  .admin-panel .section-title{
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: .8px;
+    font-family: var(--royal);
+    text-transform: uppercase;
+  }
+  .admin-actions .danger{
+    border-color:#5a2f2f;
+    color:#ffcccc;
+  }
+
 </style>
 </head>
 
@@ -507,7 +557,9 @@
     <div class="admin-divider"></div>
     <h3>REORDER CHAPTERS</h3>
     <p class="reorder-note">Drag a chapter to change its order in the list.</p>
-    <div class="reorder-list" id="reorderList" aria-live="polite"></div>
+    <div class="reorder-list" id="reorderList" aria-live="polite">
+      <!-- injected by JS -->
+    </div>
   </div>
 </div>
 
@@ -519,7 +571,9 @@
     <div class="dtitle">CHAPTERS</div>
     <button class="iconbtn" id="closeDrawer" aria-label="Close menu">✕</button>
   </div>
-  <div class="chapters" id="chaptersDrawer"></div>
+  <div class="chapters" id="chaptersDrawer">
+    <!-- injected by JS -->
+  </div>
   <div class="meta">
     Access: Magenta-7+<br/>
     Archive Node: C-402-E / VARUN<br/>
@@ -528,6 +582,7 @@
 </aside>
 
 <div class="app">
+
   <header class="topbar">
     <div class="topbar-inner">
       <button class="iconbtn" id="openDrawer" aria-label="Open menu">☰</button>
@@ -551,7 +606,9 @@
     <!-- Desktop sidebar -->
     <aside class="sidebar" aria-label="Chapters">
       <h3>CHAPTER LIST</h3>
-      <div class="chapters" id="chaptersSidebar"></div>
+      <div class="chapters" id="chaptersSidebar">
+        <!-- injected by JS -->
+      </div>
       <div class="meta">
         Access: Magenta-7+<br/>
         Archive Node: C-402-E / VARUN<br/>
@@ -560,6 +617,7 @@
     </aside>
 
     <main>
+      <!-- Your original content preserved, with IDs added for chapter navigation -->
       <h1>NOOSPHERE ARCHIVE</h1>
       <h2>Magos C-402 Epsilon Varun</h2>
 
@@ -613,6 +671,14 @@
         <p>Magos Varun continues exploratory operations and battlefield technological reclamation aboard The Last Rose. Multiple data clusters remain <span class="classified">CLASSIFIED</span>.</p>
       </div>
 
+      <h2>Revision Log</h2>
+
+      <div class="archive-box" data-entry="revisions" id="revisions">
+        <p class="year">ARCHIVE REVISIONS</p>
+        <ul class="rev-list" id="revisionList" aria-live="polite"></ul>
+        <p class="rev-hint">Tip: Use ADMIN → Add Revision to record changes like a proper Martian scribe.</p>
+      </div>
+
       <footer>
         Data Integrity Verified.<br/>
         Access Level: Magenta-7 or Higher.<br/>
@@ -623,19 +689,75 @@
 </div>
 
 <script>
-/* ===== Sidebar chapters (desktop + mobile) ===== */
-const chapters = [
-  { id: "profile", tag: "CORE", label: "Profile Node" },
-  { id: "y-50", tag: "-50", label: "Initial Deployment" },
-  { id: "y-44", tag: "-44", label: "STC Fragment" },
-  { id: "y-38", tag: "-38", label: "Augmentation Delta-III" },
-  { id: "y-29", tag: "-29", label: "Classified Engagement" },
-  { id: "y-21", tag: "-21", label: "Autonomy Grant" },
-  { id: "y-14", tag: "-14", label: "Boards The Last Rose" },
-  { id: "y-7",  tag: "-7",  label: "Servo-skull Upgrade" },
-  { id: "y-current", tag: "NOW", label: "Current Era" }
+
+/* =========================================================
+   Varun Archive — upgrades:
+   1) Revision Log UI
+   2) Persistent storage (localStorage)
+   3) Export to JSON
+   ========================================================= */
+
+const STORAGE_KEY = "varun_archive_data_v1";
+
+/* ---- Defaults (these are the 'factory settings') ---- */
+const DEFAULT_CHAPTERS = [
+  { id: "profile", tag: "CORE", label: "Profile Node", type: "builtin" },
+  { id: "revisions", tag: "REV", label: "Revision Log", type: "builtin" },
+  { id: "y-50", tag: "-50", label: "Initial Deployment", type: "builtin" },
+  { id: "y-44", tag: "-44", label: "STC Fragment", type: "builtin" },
+  { id: "y-38", tag: "-38", label: "Augmentation Delta-III", type: "builtin" },
+  { id: "y-29", tag: "-29", label: "Classified Engagement", type: "builtin" },
+  { id: "y-21", tag: "-21", label: "Autonomy Grant", type: "builtin" },
+  { id: "y-14", tag: "-14", label: "Boards The Last Rose", type: "builtin" },
+  { id: "y-7",  tag: "-7",  label: "Servo-skull Upgrade", type: "builtin" },
+  { id: "y-current", tag: "NOW", label: "Current Era", type: "builtin" }
 ];
 
+const DEFAULT_REVISIONS = [
+  { date: "GENESIS", note: "Archive initialized. Machine-spirits appeased." }
+];
+
+/* ---- Load / Save ---- */
+function safeParse(jsonText){
+  try { return JSON.parse(jsonText); } catch { return null; }
+}
+
+function loadState(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  const parsed = raw ? safeParse(raw) : null;
+
+  // If nothing saved, return defaults
+  if(!parsed || typeof parsed !== "object"){
+    return {
+      version: 1,
+      chapters: structuredClone(DEFAULT_CHAPTERS),
+      revisions: structuredClone(DEFAULT_REVISIONS)
+    };
+  }
+
+  // Minimal validation
+  const chapters = Array.isArray(parsed.chapters) ? parsed.chapters : structuredClone(DEFAULT_CHAPTERS);
+  const revisions = Array.isArray(parsed.revisions) ? parsed.revisions : structuredClone(DEFAULT_REVISIONS);
+
+  return { version: 1, chapters, revisions };
+}
+
+function saveState(){
+  const payload = {
+    version: 1,
+    savedAt: new Date().toISOString(),
+    chapters,
+    revisions
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+}
+
+/* ---- Live state (in-memory) ---- */
+let { chapters, revisions } = loadState();
+
+/* =========================================================
+   UI: Chapters (desktop + mobile)
+   ========================================================= */
 function renderChapters(container){
   if(!container) return;
   container.innerHTML = chapters.map(c => `
@@ -668,7 +790,6 @@ function syncChaptersUI(){
   renderChapters(chaptersDrawer);
   renderReorderList();
 }
-
 syncChaptersUI();
 
 function smoothScrollTo(id){
@@ -686,7 +807,9 @@ document.addEventListener("click", (e) => {
   closeDrawer();
 });
 
-/* ===== Drawer open/close ===== */
+/* =========================================================
+   Drawer open/close (mobile)
+   ========================================================= */
 const openBtn = document.getElementById("openDrawer");
 const closeBtn = document.getElementById("closeDrawer");
 const backdrop = document.getElementById("backdrop");
@@ -698,22 +821,13 @@ if(openBtn) openBtn.addEventListener("click", openDrawer);
 if(closeBtn) closeBtn.addEventListener("click", closeDrawer);
 if(backdrop) backdrop.addEventListener("click", closeDrawer);
 
-/* ===== Search filter + highlight ===== */
+/* =========================================================
+   Search filter + highlight (robust)
+   ========================================================= */
 const input = document.getElementById("searchInput");
 const clearBtn = document.getElementById("clearBtn");
 let boxes = Array.from(document.querySelectorAll(".archive-box"));
 const footerEl = document.querySelector("footer");
-
-const adminPencil = document.getElementById("adminPencil");
-const adminModal = document.getElementById("adminModal");
-const adminCancel = document.getElementById("adminCancel");
-const adminSave = document.getElementById("adminSave");
-const chapterTag = document.getElementById("chapterTag");
-const chapterLabel = document.getElementById("chapterLabel");
-const chapterBody = document.getElementById("chapterBody");
-
-let draggingId = null;
-let dropTargetId = null;
 
 function stripMarks(node){
   const marks = node.querySelectorAll("mark");
@@ -721,17 +835,18 @@ function stripMarks(node){
     const text = document.createTextNode(m.textContent);
     m.replaceWith(text);
   });
-  // IMPORTANT: merges adjacent text nodes so multi-letter searches work after previous highlighting
+  // IMPORTANT: merges adjacent text nodes so multi-letter searches work after prior highlight
   node.normalize();
 }
 
-/* Robust highlight (fixes "filter works but no highlight") */
+function escapeRegExp(s){
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function highlightText(node, q){
   if(!q) return;
 
-  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const re = new RegExp(escaped, "ig");
-
+  const re = new RegExp(escapeRegExp(q), "ig");
   const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null);
   const textNodes = [];
   while(walker.nextNode()) textNodes.push(walker.currentNode);
@@ -739,8 +854,8 @@ function highlightText(node, q){
   for(const t of textNodes){
     const val = t.nodeValue;
     if(!val) continue;
-
-    if(!val.toLowerCase().includes(q.toLowerCase())) continue;
+    if(!re.test(val)) continue;
+    re.lastIndex = 0;
 
     const frag = document.createDocumentFragment();
     let last = 0;
@@ -761,8 +876,8 @@ function highlightText(node, q){
 
 function applySearch(){
   if(!input) return;
-
   const q = input.value.trim();
+
   boxes.forEach(b => stripMarks(b));
 
   if(!q){
@@ -788,12 +903,28 @@ if(clearBtn) clearBtn.addEventListener("click", () => {
   input.focus();
 });
 
-/* ===== Admin modal ===== */
+/* =========================================================
+   Admin modal: add chapter + reorder + revisions + export
+   ========================================================= */
+const adminPencil = document.getElementById("adminPencil");
+const adminModal = document.getElementById("adminModal");
+const adminCancel = document.getElementById("adminCancel");
+const adminSave = document.getElementById("adminSave");
+const chapterTag = document.getElementById("chapterTag");
+const chapterLabel = document.getElementById("chapterLabel");
+const chapterBody = document.getElementById("chapterBody");
+
+const revDate = document.getElementById("revDate");
+const revNote = document.getElementById("revNote");
+const revSave = document.getElementById("revSave");
+const exportBtn = document.getElementById("exportJson");
+const resetBtn = document.getElementById("resetLocal");
+
 function openAdmin(){
   if(!adminModal) return;
   adminModal.classList.add("open");
   renderReorderList();
-  if(chapterTag) chapterTag.focus();
+  chapterTag?.focus();
 }
 function closeAdmin(){
   if(!adminModal) return;
@@ -801,10 +932,44 @@ function closeAdmin(){
   if(chapterTag) chapterTag.value = "";
   if(chapterLabel) chapterLabel.value = "";
   if(chapterBody) chapterBody.value = "";
+  if(revDate) revDate.value = "";
+  if(revNote) revNote.value = "";
 }
 
 function slugify(text){
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function insertCustomBox(ch){
+  const box = document.createElement("div");
+  box.className = "archive-box";
+  box.dataset.entry = "custom";
+  box.id = ch.id;
+  box.innerHTML = `
+    <p class="year">${ch.tag}</p>
+    <p><strong>${ch.label}</strong></p>
+    <p>${(ch.body || "").replace(/\n/g, "<br/>")}</p>
+  `;
+  // Insert before footer
+  if(footerEl && footerEl.parentNode){
+    footerEl.parentNode.insertBefore(box, footerEl);
+  } else {
+    document.body.appendChild(box);
+  }
+}
+
+function rebuildCustomBoxesFromState(){
+  // remove existing custom boxes
+  document.querySelectorAll('.archive-box[data-entry="custom"]').forEach(el => el.remove());
+
+  // re-insert in the order they appear in chapters
+  for(const ch of chapters){
+    if(ch.type === "custom"){
+      insertCustomBox(ch);
+    }
+  }
+
+  boxes = Array.from(document.querySelectorAll(".archive-box"));
 }
 
 function addChapter(){
@@ -820,26 +985,12 @@ function addChapter(){
   const idBase = slugify(label) || "chapter";
   const id = `${idBase}-${Date.now().toString(36)}`;
 
-  chapters.push({ id, tag, label });
+  const ch = { id, tag, label, type: "custom", body };
+  chapters.push(ch);
+
+  saveState();
   syncChaptersUI();
-
-  const box = document.createElement("div");
-  box.className = "archive-box";
-  box.dataset.entry = "custom";
-  box.id = id;
-  box.innerHTML = `
-    <p class="year">${tag}</p>
-    <p><strong>${label}</strong></p>
-    <p>${body.replace(/\n/g, "<br/>")}</p>
-  `;
-
-  if(footerEl && footerEl.parentNode){
-    footerEl.parentNode.insertBefore(box, footerEl);
-  } else {
-    document.body.appendChild(box);
-  }
-
-  boxes = Array.from(document.querySelectorAll(".archive-box"));
+  rebuildCustomBoxesFromState();
   applySearch();
   closeAdmin();
   smoothScrollTo(id);
@@ -859,7 +1010,10 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
-/* ===== Reorder drag/drop ===== */
+/* ---- Reorder drag/drop ---- */
+let draggingId = null;
+let dropTargetId = null;
+
 function moveChapterBefore(movedId, targetId){
   if(!movedId || !targetId || movedId === targetId) return;
   const fromIndex = chapters.findIndex(c => c.id === movedId);
@@ -869,16 +1023,19 @@ function moveChapterBefore(movedId, targetId){
   const insertIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
   chapters.splice(insertIndex, 0, item);
 }
+
 function moveChapterToEnd(movedId){
   const fromIndex = chapters.findIndex(c => c.id === movedId);
   if(fromIndex < 0) return;
   const [item] = chapters.splice(fromIndex, 1);
   chapters.push(item);
 }
+
 function clearDropTargets(){
   const targets = reorderList ? reorderList.querySelectorAll(".drop-target") : [];
   targets.forEach(t => t.classList.remove("drop-target"));
 }
+
 if(reorderList){
   reorderList.addEventListener("dragstart", (e) => {
     const item = e.target.closest(".reorder-item");
@@ -915,10 +1072,99 @@ if(reorderList){
     } else {
       moveChapterToEnd(draggingId);
     }
+    saveState();
     syncChaptersUI();
+    rebuildCustomBoxesFromState();
     clearDropTargets();
   });
 }
+
+/* =========================================================
+   Revision Log UI
+   ========================================================= */
+const revisionList = document.getElementById("revisionList");
+
+function renderRevisions(){
+  if(!revisionList) return;
+  if(!Array.isArray(revisions) || revisions.length === 0){
+    revisionList.innerHTML = "<li><span class='rev-date'>NULL</span><span class='rev-note'>No revisions recorded.</span></li>";
+    return;
+  }
+  revisionList.innerHTML = revisions.map(r => `
+    <li>
+      <span class="rev-date">${r.date || "REV"}</span>
+      <span class="rev-note">${r.note || ""}</span>
+    </li>
+  `).join("");
+}
+renderRevisions();
+
+function addRevision(){
+  const date = (revDate?.value || "").trim() || new Date().toISOString().slice(0,10);
+  const note = (revNote?.value || "").trim();
+  if(!note){
+    revNote?.focus();
+    return;
+  }
+  revisions.unshift({ date, note });
+  saveState();
+  renderRevisions();
+  closeAdmin();
+  smoothScrollTo("revisions");
+}
+
+if(revSave) revSave.addEventListener("click", addRevision);
+
+/* =========================================================
+   Export JSON
+   ========================================================= */
+function exportJSON(){
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    chapters,
+    revisions
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "varun-archive-backup.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+if(exportBtn) exportBtn.addEventListener("click", exportJSON);
+
+/* =========================================================
+   Reset local data (safety button)
+   ========================================================= */
+function resetLocal(){
+  const ok = confirm("Reset local saved data? This clears saved chapters + revisions on THIS browser only.");
+  if(!ok) return;
+  localStorage.removeItem(STORAGE_KEY);
+
+  // restore defaults in memory
+  chapters = structuredClone(DEFAULT_CHAPTERS);
+  revisions = structuredClone(DEFAULT_REVISIONS);
+
+  syncChaptersUI();
+  rebuildCustomBoxesFromState();
+  renderRevisions();
+  applySearch();
+  closeAdmin();
+}
+
+if(resetBtn) resetBtn.addEventListener("click", resetLocal);
+
+/* =========================================================
+   On load: rebuild any saved custom chapters
+   ========================================================= */
+rebuildCustomBoxesFromState();
+renderRevisions();
 
 /* ===== Noosphere background (telemetry streams, NOT matrix rain) ===== */
 (() => {
@@ -929,13 +1175,19 @@ if(reorderList){
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const DPR = () => Math.max(1, Math.min(2, window.devicePixelRatio || 1));
 
-  const state = { streaks: [], pulses: [], glyphs: [] };
+  const state = {
+    w: 0, h: 0,
+    streaks: [],
+    pulses: [],
+    glyphs: []
+  };
+
   const rand = (min, max) => Math.random() * (max - min) + min;
 
   function resize(){
     const dpr = DPR();
-    canvas.width = Math.floor(window.innerWidth * dpr);
-    canvas.height = Math.floor(window.innerHeight * dpr);
+    state.w = canvas.width = Math.floor(window.innerWidth * dpr);
+    state.h = canvas.height = Math.floor(window.innerHeight * dpr);
     canvas.style.width = window.innerWidth + "px";
     canvas.style.height = window.innerHeight + "px";
     ctx.setTransform(1,0,0,1,0,0);
@@ -958,7 +1210,7 @@ if(reorderList){
         y: rand(0, window.innerHeight),
         len: rand(10, 44),
         speed: rand(0.10, 0.45),
-        angle: diag ? rand(-0.28, -0.06) : rand(-0.06, 0.06),
+        angle: diag ? rand(-0.28, -0.06) : rand(-0.06, 0.06), // mostly horizontal, some diagonal
         alpha: rand(0.05, 0.22),
         red: Math.random() < 0.045
       });
@@ -997,6 +1249,7 @@ if(reorderList){
 
   function clearFrame(){
     ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+    // faint wash to avoid hard flicker
     ctx.fillStyle = "rgba(10, 14, 18, 0.10)";
     ctx.fillRect(0,0,window.innerWidth,window.innerHeight);
   }
@@ -1017,6 +1270,7 @@ if(reorderList){
       ctx.stroke();
       ctx.restore();
 
+      // drift mostly right + slight down (telemetry)
       s.x += Math.cos(s.angle) * s.speed * 1.4;
       s.y += Math.sin(s.angle) * s.speed * 0.6 + s.speed * 0.06;
 
@@ -1070,9 +1324,11 @@ if(reorderList){
 
   function drawStatic(){
     clearFrame();
+    // draw a fixed pattern snapshot
     drawStreaks();
     for(let i=0;i<4;i++) spawnGlyphCluster();
     drawGlyphs();
+    // subtle lines
     ctx.save();
     ctx.globalAlpha = 0.10;
     ctx.strokeStyle = "rgba(125,190,255,0.20)";
@@ -1105,3 +1361,4 @@ if(reorderList){
 </script>
 </body>
 </html>
+2
