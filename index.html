@@ -678,82 +678,69 @@ function renderAdminLists(){renderChaptersAdminList(); renderRevsAdminList();}
   const ctx=canvas.getContext("2d",{alpha:true});
   const prefersReduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const DPR=()=>Math.max(1,Math.min(2,window.devicePixelRatio||1));
-  const bg={streaks:[],pulses:[],glyphs:[]};
+  const chars="ｦｱｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉ0123456789ABCDEF";
+  const state={font:16,cols:[],drops:[],speed:[],bright:[]};
   const rand=(a,b)=>Math.random()*(b-a)+a;
-  function seed(n){
-    bg.streaks=[];
-    for(let i=0;i<n;i++){
-      const diag=Math.random()<.42;
-      bg.streaks.push({x:rand(-80,innerWidth+80),y:rand(0,innerHeight),len:rand(10,44),speed:rand(.10,.45),
-        angle:diag?rand(-.28,-.06):rand(-.06,.06),alpha:rand(.05,.22),red:Math.random()<.045});
+
+  function resetColumns(){
+    state.cols=[]; state.drops=[]; state.speed=[]; state.bright=[];
+    const count=Math.ceil(innerWidth/state.font);
+    for(let i=0;i<count;i++){
+      state.cols.push(i*state.font);
+      state.drops.push(rand(-innerHeight,innerHeight));
+      state.speed.push(rand(prefersReduced?0.08:0.45,prefersReduced?0.18:1.2));
+      state.bright.push(Math.random()<0.12);
     }
-    bg.pulses=[]; bg.glyphs=[];
   }
+
   function resize(){
     const dpr=DPR();
     canvas.width=Math.floor(innerWidth*dpr); canvas.height=Math.floor(innerHeight*dpr);
     canvas.style.width=innerWidth+"px"; canvas.style.height=innerHeight+"px";
     ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr);
-    seed(prefersReduced?90:130);
-    if(prefersReduced) drawStatic();
+    state.font=innerWidth<700?14:16;
+    resetColumns();
+    if(prefersReduced) drawFrame(true);
   }
-  function spawnPulse(){
-    if(bg.pulses.length>2) return;
-    const vertical=Math.random()<.25;
-    bg.pulses.push({t:0,vertical,pos:vertical?rand(.15,.85)*innerWidth:rand(.2,.8)*innerHeight,width:rand(140,320),alpha:rand(.06,.14)});
-  }
-  function spawnGlyphCluster(){
-    if(bg.glyphs.length>6) return;
-    const chars="01ABCDEF"; const count=Math.floor(rand(3,10));
-    let text=""; for(let i=0;i<count;i++) text+=chars[Math.floor(rand(0,chars.length))];
-    bg.glyphs.push({x:rand(18,innerWidth-60),y:rand(26,innerHeight-18),text,life:Math.floor(rand(70,150)),alpha:rand(.06,.18),red:Math.random()<.08});
-  }
-  function clearFrame(){
-    ctx.clearRect(0,0,innerWidth,innerHeight);
-    ctx.fillStyle="rgba(10,14,18,0.10)"; ctx.fillRect(0,0,innerWidth,innerHeight);
-  }
-  function drawStreaks(){
-    for(const s of bg.streaks){
-      ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.angle);
-      ctx.strokeStyle=s.red?"rgba(180,40,40,0.22)":"rgba(125,190,255,0.24)";
-      ctx.globalAlpha=s.alpha; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(s.len,0); ctx.stroke(); ctx.restore();
-      s.x+=Math.cos(s.angle)*s.speed*1.4; s.y+=Math.sin(s.angle)*s.speed*0.6+s.speed*0.06;
-      if(s.x>innerWidth+120||s.y>innerHeight+80){
-        s.x=rand(-140,-20); s.y=rand(0,innerHeight); s.len=rand(10,44); s.speed=rand(.10,.45); s.alpha=rand(.05,.22); s.red=Math.random()<.045;
+
+  function drawFrame(staticFrame=false){
+    ctx.fillStyle=staticFrame?"rgba(8,14,9,0.35)":"rgba(8,14,9,0.12)";
+    ctx.fillRect(0,0,innerWidth,innerHeight);
+
+    ctx.font=`${state.font}px Consolas, monospace`;
+    ctx.textBaseline="top";
+
+    for(let i=0;i<state.cols.length;i++){
+      const x=state.cols[i];
+      const y=state.drops[i];
+      const char=chars[Math.floor(Math.random()*chars.length)];
+
+      ctx.shadowBlur=state.bright[i]?10:0;
+      ctx.shadowColor="rgba(153,255,180,0.6)";
+      ctx.fillStyle=state.bright[i]?"rgba(190,255,210,0.9)":"rgba(55,195,95,0.65)";
+      ctx.fillText(char,x,y);
+
+      if(!staticFrame){
+        state.drops[i]+=state.font*state.speed[i];
+        if(state.drops[i]>innerHeight+state.font*2 && Math.random()>0.97){
+          state.drops[i]=rand(-innerHeight*0.35,0);
+          state.speed[i]=rand(0.45,1.2);
+          state.bright[i]=Math.random()<0.12;
+        }
       }
     }
+    ctx.shadowBlur=0;
   }
-  function drawPulses(){
-    bg.pulses=bg.pulses.filter(p=>p.t<1);
-    for(const p of bg.pulses){
-      p.t+=0.010;
-      ctx.save(); ctx.globalAlpha=p.alpha*(1-p.t); ctx.strokeStyle="rgba(125,190,255,0.22)"; ctx.lineWidth=2; ctx.beginPath();
-      if(p.vertical){const x=p.pos+Math.sin(p.t*Math.PI)*p.width*0.08; ctx.moveTo(x,0); ctx.lineTo(x,innerHeight);}
-      else {const y=p.pos+Math.cos(p.t*Math.PI)*p.width*0.07; ctx.moveTo(0,y); ctx.lineTo(innerWidth,y);}
-      ctx.stroke(); ctx.restore();
-    }
-  }
-  function drawGlyphs(){
-    ctx.save(); ctx.font="10px Consolas, monospace";
-    bg.glyphs=bg.glyphs.filter(g=>g.life>0);
-    for(const g of bg.glyphs){
-      ctx.fillStyle=g.red?"rgba(200,60,60,0.28)":"rgba(145,200,255,0.30)";
-      ctx.globalAlpha=g.alpha*(g.life/150); ctx.fillText(g.text,g.x,g.y); g.life-=1;
-    }
-    ctx.restore();
-  }
-  function drawStatic(){
-    clearFrame(); drawStreaks(); for(let i=0;i<4;i++) spawnGlyphCluster(); drawGlyphs();
-    ctx.save(); ctx.globalAlpha=0.10; ctx.strokeStyle="rgba(125,190,255,0.20)"; ctx.lineWidth=1;
-    for(let i=0;i<5;i++){const y=rand(0,innerHeight); ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(innerWidth,y); ctx.stroke();}
-    ctx.restore();
-  }
+
   function animate(){
     if(prefersReduced) return;
-    clearFrame(); if(Math.random()<0.020) spawnPulse(); if(Math.random()<0.045) spawnGlyphCluster();
-    drawStreaks(); drawPulses(); drawGlyphs(); requestAnimationFrame(animate);
+    drawFrame(false);
+    requestAnimationFrame(animate);
   }
-  addEventListener("resize",resize); resize(); if(!prefersReduced) animate();
+
+  addEventListener("resize",resize);
+  resize();
+  if(!prefersReduced) animate();
 })();
 
 /* Boot */
