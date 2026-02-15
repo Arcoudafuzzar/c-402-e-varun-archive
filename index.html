@@ -675,7 +675,7 @@ function renderAdminLists(){renderChaptersAdminList(); renderRevsAdminList();}
 /* Background */
 (()=>{const canvas=document.getElementById("noosphere"); if(!canvas) return;
   const ctx=canvas.getContext("2d",{alpha:true});
-  const prefersReduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const prefersReduced = false; // force animation
   const DPR=()=>Math.max(1,Math.min(2,window.devicePixelRatio||1));
   const bg={streaks:[],pulses:[],glyphs:[]};
   const rand=(a,b)=>Math.random()*(b-a)+a;
