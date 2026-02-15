@@ -748,11 +748,31 @@ function renderAdminLists(){renderChaptersAdminList(); renderRevsAdminList();}
     ctx.restore();
   }
   function animate(){
+    let rafId = null;
+    let running = false;
     if(prefersReduced) return;
     clearFrame(); if(Math.random()<0.020) spawnPulse(); if(Math.random()<0.045) spawnGlyphCluster();
-    drawStreaks(); drawPulses(); drawGlyphs(); requestAnimationFrame(animate);
+    drawStreaks(); drawPulses(); drawGlyphs(); rafId = requestAnimationFrame(animate);
+
   }
-  addEventListener("resize",resize); resize(); if(!prefersReduced) animate();
+  addEventListener("resize",resize); resize(); function start(){
+  if(prefersReduced || running) return;
+  running = true;
+  animate();
+}
+function stop(){
+  running = false;
+  if(rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+}
+
+document.addEventListener("visibilitychange", () => {
+  if(document.hidden) stop();
+  else start();
+});
+
+start();
+
 })();
 
 /* Boot */
