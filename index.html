@@ -116,100 +116,6 @@
 <body>
 <canvas id="noosphere" aria-hidden="true"></canvas>
 <div class="vignette" aria-hidden="true"></div>
-
-<button class="admin-pill" id="adminToggle" aria-label="Admin tools" title="Admin tools">
-  <span class="dot" aria-hidden="true"></span>
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M3 17.25V21h3.75L19.81 7.94l-3.75-3.75L3 17.25zm2.92 2.83H5v-.92l9.06-9.06.92.92-9.06 9.06zM20.71 6.04a1 1 0 0 0 0-1.41l-1.34-1.34a1 1 0 0 0-1.41 0l-1.12 1.12 3.75 3.75 1.12-1.12z"/>
-  </svg>
-  ADMIN
-</button>
-
-<div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
-  <div class="panel">
-    <div class="panel-top">
-      <div>
-        <h3 id="adminTitle">VARUN ARCHIVE — ADMIN</h3>
-        <div class="note">Everything you add/edit/delete is stored in your browser (localStorage). If you change PC/browser, export JSON first.</div>
-      </div>
-      <div class="tabs" role="tablist">
-        <button class="tabbtn active" data-tab="chapters" type="button">Chapters</button>
-        <button class="tabbtn" data-tab="revisions" type="button">Revisions</button>
-        <button class="tabbtn" data-tab="backup" type="button">Backup</button>
-        <button class="tabbtn" data-tab="close" type="button">Close ✕</button>
-      </div>
-    </div>
-
-    <div id="tab-chapters">
-      <div class="grid">
-        <div class="section">
-          <h4 id="chapterFormTitle">Add / Edit Chapter</h4>
-          <div class="field"><label for="chapterTag">Chapter tag</label><input id="chapterTag" type="text" placeholder="e.g., -1 or NOW" /></div>
-          <div class="field"><label for="chapterLabel">Chapter title (sidebar)</label><input id="chapterLabel" type="text" placeholder="Short label for the list" /></div>
-          <div class="field"><label for="chapterBody">Chapter entry text</label><textarea id="chapterBody" placeholder="Write the entry text here..."></textarea></div>
-          <div class="row">
-            <button class="btn primary" type="button" id="saveChapterBtn">Save</button>
-            <button class="btn" type="button" id="newChapterBtn">New</button>
-            <button class="btn danger" type="button" id="deleteChapterBtn" disabled>Delete</button>
-          </div>
-          <div class="note" style="margin-top:8px;">Tip: click a chapter on the right list to edit it.</div>
-        </div>
-        <div class="section">
-          <h4>All chapters</h4>
-          <div class="list" id="chaptersAdminList"></div>
-          <div class="note" style="margin-top:10px;">Reorder: drag & drop items in this list.</div>
-        </div>
-      </div>
-    </div>
-
-    <div id="tab-revisions" style="display:none;">
-      <div class="grid">
-        <div class="section">
-          <h4 id="revFormTitle">Add / Edit Revision</h4>
-          <div class="field"><label for="revDate">Revision date/time</label><input id="revDate" type="text" placeholder="e.g., M41.999 — 2026-02-15" /></div>
-          <div class="field"><label for="revNote">Revision note</label><textarea id="revNote" placeholder="What changed?"></textarea></div>
-          <div class="row">
-            <button class="btn primary" type="button" id="saveRevBtn">Save</button>
-            <button class="btn" type="button" id="newRevBtn">New</button>
-            <button class="btn danger" type="button" id="deleteRevBtn" disabled>Delete</button>
-          </div>
-          <div class="note" style="margin-top:8px;">These appear inside a “Revision Log” chapter.</div>
-        </div>
-        <div class="section">
-          <h4>Revision log entries</h4>
-          <div class="list" id="revsAdminList"></div>
-          <div class="note" style="margin-top:10px;">Reorder: drag & drop entries.</div>
-        </div>
-      </div>
-    </div>
-
-    <div id="tab-backup" style="display:none;">
-      <div class="grid">
-        <div class="section">
-          <h4>Export</h4>
-          <div class="note">Downloads your current chapters + revisions as a JSON file.</div>
-          <div class="row" style="margin-top:10px;">
-            <button class="btn primary" type="button" id="exportBtn">Export JSON</button>
-            <button class="btn warn" type="button" id="resetBtn">Reset to Defaults</button>
-          </div>
-          <div class="note" style="margin-top:10px;">Reset only affects your browser’s saved data.</div>
-        </div>
-        <div class="section">
-          <h4>Import</h4>
-          <div class="note">Paste JSON you exported earlier.</div>
-          <div class="field" style="margin-top:10px;">
-            <label for="importArea">JSON</label>
-            <textarea id="importArea" placeholder='{"chapters":[...],"revisions":[...]}'></textarea>
-          </div>
-          <div class="row"><button class="btn primary" type="button" id="importBtn">Import JSON</button></div>
-          <div class="note" style="margin-top:10px;">If something breaks: refresh, then import again.</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
 <div class="backdrop" id="backdrop" aria-hidden="true"></div>
 
 <aside class="drawer" id="drawer" aria-label="Chapters">
@@ -429,28 +335,7 @@ function applySearch(){
 input.addEventListener("input",applySearch);
 clearBtn.addEventListener("click",()=>{input.value="";applySearch();input.focus();});
 
-/* Admin */
-const adminToggle=document.getElementById("adminToggle");
-const adminModal=document.getElementById("adminModal");
-const tabBtns=Array.from(document.querySelectorAll(".tabbtn"));
-const tabChapters=document.getElementById("tab-chapters");
-const tabRevisions=document.getElementById("tab-revisions");
-const tabBackup=document.getElementById("tab-backup");
-function showTab(name){
-  tabBtns.forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
-  tabChapters.style.display=(name==="chapters")?"":"none";
-  tabRevisions.style.display=(name==="revisions")?"":"none";
-  tabBackup.style.display=(name==="backup")?"":"none";
-  if(name==="close") closeAdmin();
-}
-tabBtns.forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
-function openAdmin(){document.body.classList.add("admin-on"); adminModal.classList.add("open"); showTab("chapters"); renderAdminLists(); resetChapterForm(); resetRevForm();}
-function closeAdmin(){adminModal.classList.remove("open");}
-adminToggle.addEventListener("click",()=>{adminModal.classList.contains("open")?closeAdmin():openAdmin();});
-adminModal.addEventListener("click",(e)=>{if(e.target===adminModal) closeAdmin();});
-window.addEventListener("keydown",(e)=>{if(e.key==="Escape"){closeDrawer(); if(adminModal.classList.contains("open")) closeAdmin();}});
-
-/* Chapters CRUD */
+  /* Chapters CRUD */
 const chaptersAdminList=document.getElementById("chaptersAdminList");
 const chapterFormTitle=document.getElementById("chapterFormTitle");
 const chapterTag=document.getElementById("chapterTag");
