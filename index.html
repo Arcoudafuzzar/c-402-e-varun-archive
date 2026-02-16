@@ -39,6 +39,9 @@
   .search input{border:none;outline:none;background:transparent;color:var(--text);width:100%;font-family:inherit;font-size:13px;}
   .search .clear{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:14px;padding:0 6px;}
   .search .clear:hover{color:var(--text);}
+  .search-empty{margin:10px 0 16px;color:var(--muted);font-size:12px;}
+  .search-empty.hidden{display:none!important;}
+  :focus-visible{outline:2px solid rgba(127,179,255,.9);outline-offset:2px;border-radius:8px;}
   .layout{display:flex;flex:1;max-width:1100px;width:100%;margin:0 auto;padding:18px 16px 40px;gap:16px;}
   .sidebar{width:260px;flex:0 0 260px;background:rgba(18,22,27,.78);border:1px solid var(--border);border-radius:var(--radius);
     box-shadow:var(--shadow);padding:14px;position:sticky;top:72px;height:fit-content;}
@@ -133,7 +136,7 @@
       <div class="search" role="search" aria-label="Search archive">
         <span class="hint">⌕</span>
         <input id="searchInput" type="search" placeholder="Search keywords (e.g., STC, injector, Last Rose)..." />
-        <button class="clear" id="clearBtn" title="Clear">×</button>
+        <button class="clear" id="clearBtn" title="Clear" aria-label="Clear search">×</button>
       </div>
     </div>
   </header>
@@ -149,6 +152,7 @@
       <h1>NOOSPHERE ARCHIVE</h1>
       <h2>Magos C-402 Epsilon Varun</h2>
       <div id="contentRoot"></div>
+      <p id="searchEmpty" class="search-empty hidden" role="status" aria-live="polite">No results found.</p>
       <footer>Data Integrity Verified.<br/>Access Level: Magenta-7 or Higher.<br/>Unauthorized replication punishable under Martian Code.</footer>
     </main>
   </div>
@@ -285,6 +289,9 @@ backdrop.addEventListener("click",closeDrawer);
 /* Search (restore original each input) */
 const input=document.getElementById("searchInput");
 const clearBtn=document.getElementById("clearBtn");
+const searchEmpty=document.getElementById("searchEmpty");
+const SEARCH_DEBOUNCE_MS=150;
+let searchTimer=null;
 let boxes=[];
 function refreshBoxesCache(){
   boxes=Array.from(document.querySelectorAll(".archive-box"));
@@ -318,16 +325,33 @@ function applySearch(){
   const q=input.value.trim();
   if(!boxes.length) refreshBoxesCache();
   boxes.forEach(b=>{restoreOriginal(b); b.classList.remove("hidden");});
-  if(!q) return;
+  if(!q){
+    if(searchEmpty) searchEmpty.classList.add("hidden");
+    return;
+  }
   const ql=q.toLowerCase();
+  let hits=0;
   boxes.forEach(b=>{
     const hit=b.innerText.toLowerCase().includes(ql);
     b.classList.toggle("hidden",!hit);
-    if(hit) highlightBox(b,q);
+    if(hit){
+      hits+=1;
+      highlightBox(b,q);
+    }
   });
+  if(searchEmpty) searchEmpty.classList.toggle("hidden",hits!==0);
 }
-input.addEventListener("input",applySearch);
-clearBtn.addEventListener("click",()=>{input.value="";applySearch();input.focus();});
+function scheduleSearch(){
+  if(searchTimer) clearTimeout(searchTimer);
+  searchTimer=setTimeout(applySearch,SEARCH_DEBOUNCE_MS);
+}
+input.addEventListener("input",scheduleSearch);
+clearBtn.addEventListener("click",()=>{
+  input.value="";
+  if(searchTimer) clearTimeout(searchTimer);
+  applySearch();
+  input.focus();
+});
 
 /* Admin (optional: page should still work if admin markup is removed) */
 const adminToggle=document.getElementById("adminToggle");
