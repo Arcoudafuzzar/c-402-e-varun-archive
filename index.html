@@ -187,15 +187,20 @@ const DEFAULT_CHAPTERS=[
 const DEFAULT_REVISIONS=[{id:"rev-1",date:"M41.999 — Initial Archive Compilation",note:"First public Noosphere Archive rendering. Search + chapters index online."}];
 
 function makeId(prefix="id"){return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;}
+const DEFAULT_PERSONS=[];
 function loadState(){
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
-    if(!raw) return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS)};
+    if(!raw) return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS)};
     const parsed=JSON.parse(raw);
     if(!parsed||!Array.isArray(parsed.chapters)||!Array.isArray(parsed.revisions)) throw new Error("bad");
-    return parsed;
+    return {
+      chapters:parsed.chapters,
+      revisions:parsed.revisions,
+      persons:Array.isArray(parsed.persons)?parsed.persons:structuredClone(DEFAULT_PERSONS)
+    };
   }catch(e){
-    return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS)};
+    return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS)};
   }
 }
 function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
@@ -230,6 +235,54 @@ function renderRevisionBox(){
   return div;
 }
 
+function renderPersonsBox(){
+  const div=document.createElement("div");
+  div.className="archive-box";
+  div.id="persons-of-interest";
+  div.dataset.kind="persons";
+  const listHtml=state.persons.map(p=>`
+    <div class="item" data-person-id="${escapeHtml(p.id||"")}">
+      <div class="meta">
+        <div class="t">
+          <span class="pill">POI</span>
+          <div class="label">${escapeHtml(p.name||"Unknown")}</div>
+        </div>
+        <div class="id">${escapeHtml(p.affiliation||"Unaligned")}</div>
+        <div class="note">${escapeHtml(p.notes||"No notes.")}</div>
+      </div>
+      <div class="actions">
+        <button class="btn danger" type="button" data-act="delete-poi" data-id="${escapeHtml(p.id||"")}">Delete</button>
+      </div>
+    </div>`).join("");
+
+  div.innerHTML=`
+    <p class="year">POI</p>
+    <p><strong>Persons of Interest</strong></p>
+    <div class="grid">
+      <section class="section" aria-label="Add person of interest">
+        <h4>Add Character</h4>
+        <form id="poiForm" class="field">
+          <label for="poiName">Name</label>
+          <input id="poiName" name="name" type="text" maxlength="120" required />
+          <label for="poiAffiliation">Affiliation</label>
+          <input id="poiAffiliation" name="affiliation" type="text" maxlength="120" />
+          <label for="poiNotes">Notes</label>
+          <textarea id="poiNotes" name="notes" maxlength="1200"></textarea>
+          <div class="row" style="margin-top:10px;">
+            <button class="btn primary" type="submit">Add Person</button>
+          </div>
+        </form>
+      </section>
+      <section class="section" aria-label="Persons of interest list">
+        <h4>Tracked Individuals</h4>
+        <div class="list" id="poiList">
+          ${listHtml || `<p class="note">No persons recorded.</p>`}
+        </div>
+      </section>
+    </div>`;
+  return div;
+}
+
 function renderContent(){
   contentRoot.innerHTML="";
   const profile=state.chapters.find(c=>c.id==="profile");
@@ -243,6 +296,7 @@ function renderContent(){
     if(ch.id==="profile") continue;
     contentRoot.appendChild(makeBox(ch));
   }
+  contentRoot.appendChild(renderPersonsBox());
   contentRoot.appendChild(renderRevisionBox());
   refreshBoxesCache();
 }
@@ -251,6 +305,7 @@ function getSidebarChapters(){
   const out=[];
   const profile=state.chapters.find(c=>c.id==="profile");
   if(profile) out.push({id:profile.id,tag:profile.tag||"CORE",label:profile.label||"Profile"});
+  out.push({id:"persons-of-interest",tag:"POI",label:"Persons of Interest"});
   out.push({id:"revision-log",tag:"REV",label:"Revision Log"});
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
@@ -274,6 +329,41 @@ function smoothScrollTo(id){const el=document.getElementById(id); if(el) el.scro
 document.addEventListener("click",(e)=>{
   const a=e.target.closest('a[data-target]'); if(!a) return;
   e.preventDefault(); smoothScrollTo(a.getAttribute("data-target")); closeDrawer();
+});
+
+contentRoot.addEventListener("submit",(e)=>{
+  const form=e.target.closest("#poiForm");
+  if(!form) return;
+  e.preventDefault();
+  const fd=new FormData(form);
+  const name=String(fd.get("name")||"").trim();
+  const affiliation=String(fd.get("affiliation")||"").trim();
+  const notes=String(fd.get("notes")||"").trim();
+  if(!name){
+    const nameInput=form.querySelector("#poiName");
+    if(nameInput) nameInput.focus();
+    return;
+  }
+  state.persons.unshift({
+    id:makeId("poi"),
+    name,
+    affiliation:affiliation||"Unaligned",
+    notes:notes||"No notes."
+  });
+  saveState();
+  renderAll();
+  smoothScrollTo("persons-of-interest");
+});
+
+contentRoot.addEventListener("click",(e)=>{
+  const btn=e.target.closest('button[data-act="delete-poi"]');
+  if(!btn) return;
+  const id=btn.getAttribute("data-id");
+  if(!id) return;
+  state.persons=state.persons.filter(p=>p.id!==id);
+  saveState();
+  renderAll();
+  smoothScrollTo("persons-of-interest");
 });
 
 /* Drawer */
@@ -594,16 +684,21 @@ if(hasAdminUI){
   });
   resetBtn.addEventListener("click",()=>{
     if(!confirm("Reset local data to defaults?")) return;
-    state={chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS)};
+    state={chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS)};
     saveState(); renderAll(); renderAdminLists(); resetChapterForm(); resetRevForm();
   });
   importBtn.addEventListener("click",()=>{
     try{
       const parsed=JSON.parse(importArea.value);
       if(!parsed||!Array.isArray(parsed.chapters)||!Array.isArray(parsed.revisions)){
-        alert("JSON must be {chapters:[...], revisions:[...]}"); return;
+        alert("JSON must be {chapters:[...], revisions:[...], persons:[...]}"); return;
       }
-      state=parsed; saveState(); renderAll(); renderAdminLists(); resetChapterForm(); resetRevForm(); alert("Import complete.");
+      state={
+        chapters:parsed.chapters,
+        revisions:parsed.revisions,
+        persons:Array.isArray(parsed.persons)?parsed.persons:[]
+      };
+      saveState(); renderAll(); renderAdminLists(); resetChapterForm(); resetRevForm(); alert("Import complete.");
     }catch(e){alert("Invalid JSON.");}
   });
 
