@@ -279,7 +279,7 @@ function renderPersonsBox(){
   div.id="persons-of-interest";
   div.dataset.kind="persons";
   const listHtml=state.persons.map(p=>`
-    <div class="item poi-card" data-person-id="${escapeHtml(p.id||"")}" data-person-image="${escapeHtml(p.image||"")}" data-person-name="${escapeHtml(p.name||"Unknown")}">
+    <div class="item" data-person-id="${escapeHtml(p.id||"")}">
       <div class="meta">
         <div class="t">
           <span class="pill">POI</span>
@@ -304,8 +304,6 @@ function renderPersonsBox(){
           <input id="poiName" name="name" type="text" maxlength="120" required />
           <label for="poiAffiliation">Affiliation</label>
           <input id="poiAffiliation" name="affiliation" type="text" maxlength="120" />
-          <label for="poiImage">Image URL</label>
-          <input id="poiImage" name="image" type="text" maxlength="2048" placeholder="https://example.com/character.jpg" />
           <label for="poiNotes">Notes</label>
           <textarea id="poiNotes" name="notes" maxlength="1200"></textarea>
           <div class="row" style="margin-top:10px;">
@@ -378,7 +376,6 @@ contentRoot.addEventListener("submit",(e)=>{
   const fd=new FormData(form);
   const name=String(fd.get("name")||"").trim();
   const affiliation=String(fd.get("affiliation")||"").trim();
-  const image=String(fd.get("image")||"").trim();
   const notes=String(fd.get("notes")||"").trim();
   if(!name){
     const nameInput=form.querySelector("#poiName");
@@ -389,7 +386,6 @@ contentRoot.addEventListener("submit",(e)=>{
     id:makeId("poi"),
     name,
     affiliation:affiliation||"Unaligned",
-    image:image||"",
     notes:notes||"No notes."
   });
   saveState();
@@ -407,42 +403,6 @@ contentRoot.addEventListener("click",(e)=>{
   renderAll();
   smoothScrollTo("persons-of-interest");
 });
-
-function hidePoiPreview(){
-  activePoiCard=null;
-  poiPreview.classList.remove("open");
-}
-function movePoiPreview(x,y){
-  const offset=16;
-  const maxX=window.innerWidth-poiPreview.offsetWidth-8;
-  const maxY=window.innerHeight-poiPreview.offsetHeight-8;
-  poiPreview.style.left=Math.max(8,Math.min(x+offset,maxX))+"px";
-  poiPreview.style.top=Math.max(8,Math.min(y+offset,maxY))+"px";
-}
-contentRoot.addEventListener("mouseover",(e)=>{
-  const card=e.target.closest(".poi-card[data-person-image]");
-  if(!card || !contentRoot.contains(card)) return;
-  const image=card.getAttribute("data-person-image");
-  if(!image) return;
-  activePoiCard=card;
-  poiPreviewImg.src=image;
-  poiPreviewCaption.textContent=card.getAttribute("data-person-name")||"Unknown";
-  poiPreview.classList.add("open");
-  movePoiPreview(e.clientX,e.clientY);
-});
-contentRoot.addEventListener("mousemove",(e)=>{
-  if(!activePoiCard) return;
-  movePoiPreview(e.clientX,e.clientY);
-});
-contentRoot.addEventListener("mouseout",(e)=>{
-  if(!activePoiCard) return;
-  const leavingCard=e.target.closest(".poi-card");
-  if(!leavingCard || leavingCard!==activePoiCard) return;
-  if(leavingCard.contains(e.relatedTarget)) return;
-  hidePoiPreview();
-});
-contentRoot.addEventListener("scroll",hidePoiPreview,true);
-window.addEventListener("scroll",hidePoiPreview,true);
 
 /* Drawer */
 const openBtn=document.getElementById("openDrawer");
