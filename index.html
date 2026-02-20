@@ -149,6 +149,20 @@
   .year{color:var(--blue);font-weight:bold;margin:0 0 8px 0;}
   .classified{color:transparent;text-shadow:0 0 10px rgba(31,143,58,.35);font-style:italic;letter-spacing:.4px;}
   body.classified-on .classified{color:#c7d0d9;text-shadow:none;}
+  .dossier-box{padding-top:36px;}
+  .dossier-scroll{max-height:62vh;overflow:auto;padding-right:8px;}
+  .dossier-section{margin-bottom:16px;border-left:2px solid rgba(31,143,58,.35);padding-left:12px;}
+  .dossier-section-title{
+    font-size:12px;
+    letter-spacing:1.6px;
+    text-transform:uppercase;
+    color:#cfe6d6;
+    font-family:"IBM Plex Mono",Consolas,monospace;
+    border-bottom:1px dashed rgba(31,143,58,.4);
+    padding-bottom:4px;
+    margin:0 0 8px 0;
+  }
+  .dossier-section p{margin:6px 0;color:#c7d0d9;font-size:12px;line-height:1.5;}
   footer{margin-top:22px;font-size:12px;color:#555;border-top:1px solid #222;padding-top:15px;}
   .hidden{display:none!important;}
   mark{background:rgba(127,179,255,.22);color:var(--text);padding:0 2px;border-radius:4px;}
@@ -686,6 +700,7 @@
         <button class="page-tab" id="tabChrono" data-tab="chrono" type="button">Chronological Record</button>
         <button class="page-tab" id="tabPoi" data-tab="poi" type="button">POI Directory</button>
         <button class="page-tab" id="tabDatabase" data-tab="database" type="button">Database</button>
+        <button class="page-tab" id="tabConstitution" data-tab="constitution" type="button">Constitution</button>
       </div>
       <div id="contentRoot"></div>
       <p id="searchEmpty" class="search-empty hidden" role="status" aria-live="polite">No results found.</p>
@@ -786,9 +801,87 @@ function makeId(prefix="id"){return `${prefix}-${Date.now().toString(36)}-${Math
 const DEFAULT_PERSONS=[];
 const DEFAULT_ENTITIES=[
   {id:"ent-varun",type:"Person",name:"Magos C-402 Epsilon Varun",tags:["Magos","Adeptus Mechanicus"],description:"Exploratory Magos Dominus and chief relic-warden aboard The Last Rose.",fields:{clearance:"Magenta-7",status:"Active"},relations:[{kind:"serves_on",targetId:"ent-ship-constitution",note:"Manufactorum oversight and expeditionary support."}]},
-  {id:"ent-ship-constitution",type:"Document",name:"Ship Constitution",tags:["Vessel","Protocol"],description:"Sanctioned writ governing The Last Rose and its lawful rites.",fields:{vault:"Sigma/IX-A",integrity:"94.1%"},relations:[{kind:"authorizes",targetId:"ent-ordo-reductor",note:"Codex sealed under Ordo Reductor oversight."}]},
+  {id:"ent-ship-constitution",type:"document",name:"Ship Constitution – The Last Rose",tags:["CORE ARCHIVE","DOCTRINE"],description:"Primary charter and operational doctrine of The Last Rose.",fields:{category:"CORE ARCHIVE / DOCTRINE",vault:"Sigma/IX-A",integrity:"94.1%"},relations:[{kind:"authorizes",targetId:"ent-ordo-reductor",note:"Codex sealed under Ordo Reductor oversight."}]},
   {id:"ent-ordo-reductor",type:"Faction",name:"Ordo Reductor",tags:["Mechanicus","Ordo"],description:"Dedicated to siege logic, macro-artillery, and sacred demolition.",fields:{sigil:"O.R-Theta",priority:"High"},relations:[]},
 ];
+const CONSTITUTION_SECTIONS={
+  governance:`The Last Rose — Μανιφέστο και Εγχειρίδιο Χρήσης
+Διασφάλιση της Ευημερίας, της Ασφάλειας και της Στρατιωτικής Ισχύος
+
+Συγγραφέας: C-402 Epsilon Varun, Magos Biologis and Explorator of the Adeptus Mechanicus, Veteran Artifex of the Ordo Reductor, Master of Medicae Arts and Xenobiology, Inquisitor’s Ally, Data-Savant, and Custodian of the Armorium
+Συνεισφέροντες: Lucas Ryo, Interrogator of the Ordo Hereticus · Titus Cornelius Scipio, Veteran of the Ultramarine Chapter
+
+Πρόλογος:
+Αυτό το έγγραφο περιλαμβάνει τις θεμελιώδεις αρχές, τους κανονισμούς και τα πρωτόκολλα που θα διασφαλίσουν την εύρυθμη λειτουργία, την ασφάλεια και την ευημερία του πλοίου και των κατοίκων του.
+
+Διοικητικά Σώματα
+1. Lord-Captain (Κύριος Καπετάνιος) — απόλυτη αρχή, στρατηγική διοίκηση.
+2. High Command (Ανώτατη Διοίκηση) — First Officer, Master of Ordnance, Chief Engineer, Navigator, Astropath.
+3. Council of Advisors (Συμβούλιο Συμβούλων) — Master of Commerce, Chief Medicus, Master of Whispers, Chief Arbiter.
+
+Διαδικασία Επιλογής:
+1. Προκήρυξη θέσεων · 2. Υποβολή αιτήσεων · 3. Αξιολόγηση · 4. Συνεντεύξεις · 5. Τελική επιλογή από τον Κύριο Καπετάνιο.
+
+Επιστολή Κλήσης Συμβουλίου:
+Κάλεσμα σε στρατηγική και επιχειρησιακή συνεργασία με ατζέντα: επισκόπηση επιχειρήσεων, κατανομή ρόλων, συντονισμός, βελτίωση διαδικασιών.`,
+  security:`Πρωτόκολλα Ασφαλείας και Αντιμετώπισης Καταστροφών
+- Αντιμετώπιση Εξωτερικών Απειλών · Διαχείριση Δαιμονικών Εισβολών
+
+Μέτρα Ασφαλείας για τους Επίσημους Οίκους και τους Ευγενείς:
+Αυστηρή επιτήρηση, ζώνες ασφαλείας, βιομετρικός έλεγχος, εσωτερική κατασκοπεία, αναφορές ασφαλείας.
+
+Πρόληψη Πραξικοπήματος:
+Συνεργασία με Chief Arbiter και Master of Whispers, διπλωματία με ευγενείς, πολιτική πρόληψης, εκπαίδευση πληρώματος.
+
+Πρωτόκολλα Επίθεσης/Εισβολής:
+Πρωτόκολλα για τον λαό (εκκένωση, καταφύγια, κρίση, πλήθος, πρώτες βοήθειες, προστασία πόρων, εθελοντές) και για τον στρατό (ταχεία αντίδραση, οχυρώσεις, αντίμετρα).
+
+Πρωτόκολλα Δαιμονικής Εισβολής:
+Άμεση ειδοποίηση, ιεροί κύκλοι, εξορκισμός, ψυχολογική άμυνα, ανίχνευση, καθαρισμός, απομόνωση, αγιασμός όπλων, ενεργειακά αντίμετρα, ιερός λόγος.`,
+  economy:`Εμπόριο και Διπλωματία:
+Διαπραγματεύσεις και συμφωνίες, έλεγχος ποιότητας εμπορευμάτων.
+
+Οικονομική Ανάπτυξη:
+Εργοστάσια και βιομηχανίες, εμπορικά κέντρα, δημιουργία θέσεων εργασίας, επενδύσεις σε τεχνολογία.
+
+Ενέργεια και Πόροι:
+Διαχείριση ενέργειας, ανακύκλωση πόρων, αποθήκευση και βιωσιμότητα αποθεμάτων.`,
+  development:`Ανάπτυξη Μεγάλης Πόλης και Βελτίωση Επιπέδου Ζωής:
+Εκπαίδευση, υγειονομικές υποδομές, οικονομική ανάπτυξη, κατοικίες και δημόσια έργα.
+
+Προτεινόμενο Πολίτευμα:
+Ιεραρχική Αυτοκρατορική Διοίκηση — ισορροπία πειθαρχίας και εκπροσώπησης.
+
+Οργάνωση και Ανάπτυξη:
+Imperial School, Technical Academy, Imperial University, Imperial Hospital, Public Health Centers.
+
+Στρατηγική Ανάπτυξης Μεσαίας Πόλης:
+Εκσυγχρονισμός εργοστασίων, Prometheum, νοσοκομεία, εκπαίδευση προσωπικού, κοινωνική συνοχή.
+
+Ανάπτυξη Άναρχου Hive σε Barracks:
+Στρατιωτική εκπαίδευση, παραγωγή όπλων και πανοπλιών, ιατρικές υποδομές, αυστηρή ιεραρχία.`,
+  protocols:`Πρωτόκολλα (Επιλεγμένα):
+1. Αντιμετώπιση Πυρκαγιάς · 2. Αποσυμπίεσης · 3. Ραδιενεργής Μόλυνσης
+4. Αντιμετώπισης Επιδημιών · 5. Τηλεϊατρικής
+6. Ανακάλυψης Αρχαίων Τεχνολογιών · 7. Αρχαιολογικών Ερευνών
+8. Διαπραγμάτευσης · 9. Ελέγχου Ποιότητας Εμπορευμάτων
+10. Υποστήριξης Πληρώματος · 11. Ενίσχυσης Ηθικού
+12. ReDaCtEd
+13. Εξοικονόμησης Ενέργειας · 14. Ανακύκλωσης Πόρων
+15. Πρώτης Επαφής · 16. Διεπιστημονικής Συνεργασίας
+
+Σύνταγμα του Πλοίου "The Last Rose" — Προλογος και Κεφάλαια:
+Κεφάλαιο 1: Διοικητική Δομή και Ηγεσία
+Κεφάλαιο 2: Δικαιώματα και Υποχρεώσεις των Πολιτών
+Κεφάλαιο 3: Πρωτόκολλα Ασφαλείας και Αντιμετώπισης Καταστροφών
+Κεφάλαιο 4: Πρωτόκολλα Υγειονομικής Περίθαλψης
+Κεφάλαιο 5: rEdActEd
+Κεφάλαιο 6: Πρωτόκολλα Εξερεύνησης και Επιστημονικής Έρευνας
+Κεφάλαιο 7: Πρωτόκολλα Εμπορίου και Διπλωματίας
+Κεφάλαιο 8: Πρωτόκολλα Ενέργειας και Πόρων
+
+Οι υπογράφοντες: C-402 Epsilon Varun, Magos Biologis and Explorator of the Adeptus Mechanicus Veteran Artifex of the Ordo Reductor, Master of Medicae Arts and Xenobiology, Inquisitor’s Ally, Data-Savant, and Custodian of the Armorium.`
+};
 function loadState(){
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
