@@ -629,6 +629,21 @@ let chapterPopupTimer=null;
 let chapterPopupWords=[];
 let chapterPopupIndex=0;
 let chapterStageTimers=[];
+const chapterAwakenings=[
+  "Awakening the Machine Spirit",
+  "Reciting the Canticle of Activation",
+  "Blessing the Omnissian Circuits",
+  "Anointing Sacred Data-Ports",
+  "Invoking the Rite of Pure Function",
+  "Rousing the Cogitator Choir"
+];
+const chapterRecognition=[
+  "Recognizing Eye Retina",
+  "Verifying Gene-Lock",
+  "Scanning Neural Sigils",
+  "Confirming Magenta-7 Clearance",
+  "Authenticating Sanctified Biometrics"
+];
 function openChapterPopup(title,entryHtml){
   const safeTitle=title||"CHAPTER";
   chapterPopupHeader.textContent=`CHAPTER ENTRY: ${safeTitle}`.toUpperCase();
@@ -675,7 +690,7 @@ function clearChapterStageTimers(){
   chapterStageTimers=[];
 }
 function openChapterPreload(){
-  chapterPreloadStatus.textContent="Recognizing Eye Retina";
+  chapterPreloadStatus.textContent=chapterRecognition[Math.floor(Math.random()*chapterRecognition.length)];
   chapterPreloadCog.classList.remove("hidden");
   chapterPreload.classList.add("open");
 }
@@ -693,7 +708,7 @@ document.addEventListener("click",(e)=>{
     clearChapterStageTimers();
     openChapterPreload();
     chapterStageTimers.push(setTimeout(()=>{
-      chapterPreloadStatus.textContent="Loading";
+    chapterPreloadStatus.textContent=chapterAwakenings[Math.floor(Math.random()*chapterAwakenings.length)];
       chapterPreloadCog.classList.remove("hidden");
     },3000));
     chapterStageTimers.push(setTimeout(()=>{
