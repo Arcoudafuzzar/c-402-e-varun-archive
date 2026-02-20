@@ -72,6 +72,83 @@
   .drawer .drawer-top .dtitle{color:var(--text);font-size:13px;letter-spacing:.6px;font-family:var(--royal);}
   body.drawer-open .backdrop{opacity:1;pointer-events:auto;}
   body.drawer-open .drawer{transform:translateX(0);}
+  .chapter-badge{
+    position:fixed;
+    right:18px;
+    bottom:18px;
+    width:54px;
+    height:54px;
+    border-radius:50%;
+    border:1px solid #2b3642;
+    background:rgba(8,12,16,.9);
+    box-shadow:0 10px 30px rgba(0,0,0,.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    z-index:25;
+  }
+  .chapter-badge img{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    object-fit:cover;
+    border:1px solid #24303b;
+  }
+  .badge-tooltip{
+    position:absolute;
+    right:64px;
+    bottom:6px;
+    background:#0c1117;
+    border:2px solid #2b3642;
+    color:#cfe6d6;
+    padding:8px 10px;
+    font-family:Consolas,monospace;
+    font-size:11px;
+    letter-spacing:1px;
+    text-shadow:0 1px 0 #000, 0 0 6px rgba(31,143,58,.35);
+    white-space:nowrap;
+    border-radius:6px;
+    opacity:0;
+    transform:translateY(4px);
+    pointer-events:none;
+    transition:opacity .15s ease, transform .15s ease;
+  }
+  .chapter-badge:hover .badge-tooltip,
+  .chapter-badge:focus-within .badge-tooltip{
+    opacity:1;
+    transform:translateY(0);
+  }
+  .chapter-modal{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:45;display:none;align-items:center;justify-content:center;padding:18px;}
+  .chapter-modal.open{display:flex;}
+  .chapter-panel{
+    width:min(420px,94vw);
+    background:rgba(12,16,20,.97);
+    border:1px solid var(--border);
+    border-radius:12px;
+    box-shadow:var(--shadow);
+    padding:16px;
+  }
+  .chapter-panel-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .chapter-panel-title{font-family:Consolas,monospace;letter-spacing:1.2px;color:#cfe6d6;text-shadow:0 1px 0 #000,0 0 6px rgba(31,143,58,.35);font-size:12px;}
+  .chapter-panel-body{display:flex;gap:12px;align-items:center;}
+  .chapter-avatar{
+    width:56px;
+    height:56px;
+    border-radius:8px;
+    border:1px solid #24303b;
+    object-fit:cover;
+    background:#0c1117;
+  }
+  .chapter-modal h4{
+    margin:0 0 6px 0;
+    font-family:Consolas,monospace;
+    letter-spacing:1.2px;
+    color:#cfe6d6;
+    text-shadow:0 1px 0 #000,0 0 6px rgba(31,143,58,.35);
+    font-size:13px;
+  }
+  .chapter-modal p{margin:0;color:var(--muted);font-size:12px;}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:40;display:none;align-items:center;justify-content:center;padding:18px;}
   .modal.open{display:flex;}
   .panel{width:min(740px,96vw);background:rgba(18,22,27,.96);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;}
@@ -178,6 +255,27 @@
       <p id="searchEmpty" class="search-empty hidden" role="status" aria-live="polite">No results found.</p>
       <footer>Data Integrity Verified.<br/>Access Level: Magenta-7 or Higher.<br/>Unauthorized replication punishable under Martian Code.</footer>
     </main>
+  </div>
+</div>
+
+<button class="chapter-badge" id="chapterBadge" aria-haspopup="dialog" aria-controls="chapterModal" aria-label="Open chapter badge">
+  <img src="https://64.media.tumblr.com/f377f3f0f624ba161dcb221e3db797a8/tumblr_plcj07IWnn1rep049o5_1280.png" alt="Chapter badge" />
+  <span class="badge-tooltip" id="badgeTooltip">CHAPTER: Persons of Interest</span>
+</button>
+
+<div class="chapter-modal" id="chapterModal" role="dialog" aria-modal="true" aria-labelledby="chapterModalTitle">
+  <div class="chapter-panel">
+    <div class="chapter-panel-top">
+      <div class="chapter-panel-title">CHAPTER BADGE</div>
+      <button class="iconbtn" id="closeChapterModal" aria-label="Close chapter modal">✕</button>
+    </div>
+    <div class="chapter-panel-body">
+      <img class="chapter-avatar" src="https://64.media.tumblr.com/f377f3f0f624ba161dcb221e3db797a8/tumblr_plcj07IWnn1rep049o5_1280.png" alt="Chapter badge avatar" />
+      <div>
+        <h4 id="chapterModalTitle"><button class="btn" id="chapterModalLink" type="button">CHAPTER: Persons of Interest</button></h4>
+        <p>Noosphere Archive Node: C-402 / VARUN</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -313,6 +411,28 @@ function closeDrawer(){document.body.classList.remove("drawer-open");}
 openBtn.addEventListener("click",openDrawer);
 closeBtn.addEventListener("click",closeDrawer);
 backdrop.addEventListener("click",closeDrawer);
+
+/* Chapter Badge */
+const chapterBadge=document.getElementById("chapterBadge");
+const chapterModal=document.getElementById("chapterModal");
+const closeChapterModal=document.getElementById("closeChapterModal");
+const chapterModalLink=document.getElementById("chapterModalLink");
+const badgeTooltip=document.getElementById("badgeTooltip");
+
+function openChapterModal(){chapterModal.classList.add("open");}
+function closeChapterModalFn(){chapterModal.classList.remove("open");}
+function scrollToPoi(){
+  const target=document.getElementById("persons-of-interest");
+  if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
+}
+chapterBadge.addEventListener("click",openChapterModal);
+badgeTooltip.addEventListener("click",(e)=>{e.stopPropagation(); scrollToPoi();});
+closeChapterModal.addEventListener("click",closeChapterModalFn);
+chapterModal.addEventListener("click",(e)=>{if(e.target===chapterModal) closeChapterModalFn();});
+chapterModalLink.addEventListener("click",scrollToPoi);
+document.addEventListener("keydown",(e)=>{
+  if(e.key==="Escape" && chapterModal.classList.contains("open")) closeChapterModalFn();
+});
 
 /* Search (restore original each input) */
 const input=document.getElementById("searchInput");
