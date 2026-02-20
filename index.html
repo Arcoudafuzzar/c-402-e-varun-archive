@@ -152,7 +152,7 @@
   .chapter-popup{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:44;display:none;align-items:center;justify-content:center;padding:18px;}
   .chapter-popup.open{display:flex;}
   .chapter-popup-panel{
-    width:min(520px,94vw);
+    width:min(660px,94vw);
     background:rgba(12,16,20,.97);
     border:1px solid var(--border);
     border-radius:12px;
@@ -169,8 +169,8 @@
   }
   .chapter-popup-body{display:flex;gap:12px;align-items:flex-start;}
   .chapter-popup-avatar{
-    width:56px;
-    height:56px;
+    width:90px;
+    height:90px;
     border-radius:8px;
     border:1px solid #24303b;
     object-fit:cover;
@@ -457,9 +457,28 @@ const chapterPopup=document.getElementById("chapterPopup");
 const closeChapterPopup=document.getElementById("closeChapterPopup");
 const chapterPopupTitle=document.getElementById("chapterPopupTitle");
 const chapterPopupEntry=document.getElementById("chapterPopupEntry");
+let chapterPopupTimer=null;
+let chapterPopupWords=[];
+let chapterPopupIndex=0;
 function openChapterPopup(title,entryHtml){
   chapterPopupTitle.textContent=title||"CHAPTER";
-  chapterPopupEntry.innerHTML=entryHtml||"<p class=\"classified\">No entry available.</p>";
+  const plain=String(entryHtml||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
+  const text=plain||"No entry available.";
+  chapterPopupEntry.innerHTML=`<p class="${plain?"" :"classified"}"></p>`;
+  const targetP=chapterPopupEntry.querySelector("p");
+  chapterPopupWords=text.split(" ");
+  chapterPopupIndex=0;
+  if(chapterPopupTimer) clearInterval(chapterPopupTimer);
+  chapterPopupTimer=setInterval(()=>{
+    if(chapterPopupIndex>=chapterPopupWords.length){
+      clearInterval(chapterPopupTimer);
+      chapterPopupTimer=null;
+      return;
+    }
+    const next=chapterPopupWords.slice(0,chapterPopupIndex+1).join(" ");
+    targetP.textContent=next;
+    chapterPopupIndex+=1;
+  },50);
   chapterPopup.classList.add("open");
 }
 function closeChapterPopupFn(){chapterPopup.classList.remove("open");}
