@@ -207,6 +207,15 @@
   .chapter-popup-content{
     font-size:12px;
     color:#c7f0d0;
+    position:relative;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid rgba(31,143,58,.28);
+    background:
+      radial-gradient(circle at 10% 20%, rgba(31,143,58,.08), rgba(0,0,0,0) 50%),
+      linear-gradient(180deg, rgba(6,10,8,.85), rgba(6,10,8,.65));
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);
+    overflow:hidden;
   }
   .chapter-popup-content h4{
     margin:0 0 8px 0;
@@ -215,6 +224,22 @@
     color:#d7ffe2;
     text-shadow:0 1px 0 #000,0 0 10px rgba(31,143,58,.6);
     font-size:13px;
+  }
+  .chapter-popup-content::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        rgba(140,255,190,.05),
+        rgba(140,255,190,.05) 1px,
+        rgba(0,0,0,0) 1px,
+        rgba(0,0,0,0) 3px
+      );
+    opacity:.35;
+    mix-blend-mode:screen;
+    pointer-events:none;
   }
   @keyframes staticScan{
     0%{transform:translateY(-6px);}
