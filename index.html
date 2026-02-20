@@ -545,6 +545,16 @@
   .tabbtn{border:1px solid #2b3642;background:rgba(12,16,20,.85);color:var(--text);border-radius:999px;padding:7px 10px;font-family:var(--royal);
     font-size:12px;cursor:pointer;user-select:none;}
   .tabbtn.active{border-color:rgba(31,143,58,.9);box-shadow:0 0 0 1px rgba(31,143,58,.25);}
+  .page-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px 0;}
+  .page-tab{border:1px solid #2b3642;background:rgba(12,16,20,.85);color:var(--text);border-radius:999px;padding:7px 12px;font-family:var(--royal);
+    font-size:12px;cursor:pointer;user-select:none;}
+  .page-tab.active{border-color:rgba(31,143,58,.9);box-shadow:0 0 0 1px rgba(31,143,58,.25);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+  .poi-tab-list{display:flex;flex-direction:column;gap:8px;}
+  .poi-tab-item{border:1px solid #24303b;border-radius:10px;background:rgba(12,16,20,.75);padding:10px;display:flex;justify-content:space-between;gap:10px;}
+  .poi-tab-item a{color:#8fe3a6;text-decoration:none;}
+  .poi-tab-item a:hover{text-decoration:underline;color:#c7ffd8;}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   @media (max-width:840px){.grid{grid-template-columns:1fr;}}
   .section{border:1px solid #24303b;border-radius:12px;padding:12px;background:rgba(12,16,20,.75);}
@@ -648,6 +658,10 @@
     <main>
       <h1>NOOSPHERE ARCHIVE</h1>
       <h2>Magos C-402 Epsilon Varun</h2>
+      <div class="page-tabs" role="tablist">
+        <button class="page-tab active" id="tabChrono" data-tab="chrono" type="button">Chronological Record</button>
+        <button class="page-tab" id="tabPoi" data-tab="poi" type="button">POI Directory</button>
+      </div>
       <div id="contentRoot"></div>
       <p id="searchEmpty" class="search-empty hidden" role="status" aria-live="polite">No results found.</p>
       <footer>Data Integrity Verified.<br/>Access Level: Magenta-7 or Higher.<br/>Unauthorized replication punishable under Martian Code.</footer>
@@ -819,15 +833,47 @@ function renderContent(){
   const profile=state.chapters.find(c=>c.id==="profile");
   if(profile) contentRoot.appendChild(makeBox(profile));
 
+  const tabs=document.createElement("div");
+  tabs.className="tabs-root";
+
+  const chronoPanel=document.createElement("div");
+  chronoPanel.className="tab-panel active";
+  chronoPanel.dataset.panel="chrono";
   const h2=document.createElement("h2");
   h2.textContent="Chronological Expedition Record";
-  contentRoot.appendChild(h2);
-
+  chronoPanel.appendChild(h2);
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
     ensureVarunLink(ch);
-    contentRoot.appendChild(makeBox(ch));
+    chronoPanel.appendChild(makeBox(ch));
   }
+
+  const poiPanel=document.createElement("div");
+  poiPanel.className="tab-panel";
+  poiPanel.dataset.panel="poi";
+  const h2b=document.createElement("h2");
+  h2b.textContent="Persons of Interest";
+  poiPanel.appendChild(h2b);
+  const list=document.createElement("div");
+  list.className="poi-tab-list";
+  const people=structuredClone(state.persons||[]).sort((a,b)=>{
+    const an=String(a.name||"").toLowerCase();
+    const bn=String(b.name||"").toLowerCase();
+    return an.localeCompare(bn);
+  });
+  list.innerHTML=people.map(p=>`
+    <div class="poi-tab-item">
+      <a href="poi.html#${p.id?`poi-${p.id}`:"persons-of-interest"}">${escapeHtml(p.name||"Unknown")}</a>
+      <span class="note">${escapeHtml(p.affiliation||"Unaligned")}</span>
+    </div>`).join("") || `<p class="classified">No persons recorded. Use the POI Registry to add entries.</p>`;
+  poiPanel.appendChild(list);
+  const link=document.createElement("p");
+  link.innerHTML=`<a class="poi-link" href="poi.html#persons-of-interest">Open POI Registry</a>`;
+  poiPanel.appendChild(link);
+
+  tabs.appendChild(chronoPanel);
+  tabs.appendChild(poiPanel);
+  contentRoot.appendChild(tabs);
   refreshBoxesCache();
 }
 
@@ -1439,6 +1485,18 @@ if(hasAdminUI){
 /* Boot */
 function renderAll(){renderContent(); renderSidebars(); refreshBoxesCache(); applySearch();}
 renderAll();
+
+/* Page Tabs */
+const tabChrono=document.getElementById("tabChrono");
+const tabPoi=document.getElementById("tabPoi");
+function setPageTab(name){
+  const panels=Array.from(document.querySelectorAll(".tab-panel"));
+  panels.forEach(p=>p.classList.toggle("active",p.dataset.panel===name));
+  tabChrono.classList.toggle("active",name==="chrono");
+  tabPoi.classList.toggle("active",name==="poi");
+}
+tabChrono.addEventListener("click",()=>setPageTab("chrono"));
+tabPoi.addEventListener("click",()=>setPageTab("poi"));
 
 /* Timeline */
 const timelineCogs=document.getElementById("timelineCogs");
