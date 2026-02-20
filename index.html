@@ -53,6 +53,7 @@
   .chapters a:hover{border-color:#33404e;}
   .chapters .tag{color:var(--blue);font-weight:700;font-size:12px;white-space:nowrap;}
   .chapters .label{color:var(--muted);font-size:12px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;}
+  .page-link[aria-current="page"]{border-color:rgba(31,143,58,.9);box-shadow:0 0 0 1px rgba(31,143,58,.25);}
   .sidebar .meta{margin-top:14px;font-size:12px;color:var(--muted);border-top:1px solid #2a3441;padding-top:12px;line-height:1.4;}
   main{flex:1;min-width:0;}
   h1,h2,h3{color:var(--accent);border-bottom:1px solid #333;padding-bottom:5px;margin:0 0 12px 0;font-family:var(--royal);}
@@ -105,36 +106,6 @@
   .item .meta .id{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:440px;}
   .item .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
   .note{font-size:11px;color:var(--muted);line-height:1.4;}
-  .poi-preview{
-    position:fixed;
-    z-index:35;
-    display:none;
-    width:180px;
-    border:1px solid #2b3642;
-    border-radius:12px;
-    background:rgba(8,12,16,.96);
-    box-shadow:var(--shadow);
-    padding:8px;
-    pointer-events:none;
-  }
-  .poi-preview.open{display:block;}
-  .poi-preview img{
-    display:block;
-    width:100%;
-    height:180px;
-    object-fit:cover;
-    border-radius:8px;
-    border:1px solid #24303b;
-    background:#0c1117;
-  }
-  .poi-preview .caption{
-    margin-top:6px;
-    font-size:11px;
-    color:var(--text);
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
   @media (max-width:980px){.sidebar{display:none;}.layout{padding-top:14px;}.search{width:52vw;min-width:180px;}}
   @media (max-width:560px){.brand{min-width:0;}.brand .subtitle{display:none;}.search{width:56vw;}body{font-size:14px;}}
 </style>
@@ -150,6 +121,17 @@
     <div class="dtitle">CHAPTERS</div>
     <button class="iconbtn" id="closeDrawer" aria-label="Close menu">✕</button>
   </div>
+  <div class="chapters">
+    <a href="index.html" class="page-link" aria-current="page">
+      <span class="tag">HOME</span>
+      <span class="label">Archive Index</span>
+    </a>
+    <a href="poi.html" class="page-link">
+      <span class="tag">POI</span>
+      <span class="label">Persons of Interest</span>
+    </a>
+  </div>
+  <div style="height:12px;"></div>
   <div class="chapters" id="chaptersDrawer"></div>
   <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
 </aside>
@@ -173,6 +155,17 @@
 
   <div class="layout">
     <aside class="sidebar" aria-label="Chapters">
+      <h3>PAGES</h3>
+      <div class="chapters">
+        <a href="index.html" class="page-link" aria-current="page">
+          <span class="tag">HOME</span>
+          <span class="label">Archive Index</span>
+        </a>
+        <a href="poi.html" class="page-link">
+          <span class="tag">POI</span>
+          <span class="label">Persons of Interest</span>
+        </a>
+      </div>
       <h3>CHAPTER LIST</h3>
       <div class="chapters" id="chaptersSidebar"></div>
       <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
@@ -239,14 +232,6 @@ let state=loadState();
 const contentRoot=document.getElementById("contentRoot");
 const chaptersSidebar=document.getElementById("chaptersSidebar");
 const chaptersDrawer=document.getElementById("chaptersDrawer");
-const poiPreview=document.createElement("div");
-poiPreview.className="poi-preview";
-poiPreview.innerHTML='<img id="poiPreviewImg" alt="Character preview" /><div class="caption" id="poiPreviewCaption"></div>';
-document.body.appendChild(poiPreview);
-const poiPreviewImg=document.getElementById("poiPreviewImg");
-const poiPreviewCaption=document.getElementById("poiPreviewCaption");
-let activePoiCard=null;
-poiPreviewImg.addEventListener("error",()=>{poiPreview.classList.remove("open");});
 
 function escapeHtml(s){
   return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -273,56 +258,6 @@ function renderRevisionBox(){
   return div;
 }
 
-function renderPersonsBox(){
-  const div=document.createElement("div");
-  div.className="archive-box";
-  div.id="persons-of-interest";
-  div.dataset.kind="persons";
-  const listHtml=state.persons.map(p=>`
-    <div class="item poi-card" data-person-id="${escapeHtml(p.id||"")}" data-person-image="${escapeHtml(p.image||"")}" data-person-name="${escapeHtml(p.name||"Unknown")}">
-      <div class="meta">
-        <div class="t">
-          <span class="pill">POI</span>
-          <div class="label">${escapeHtml(p.name||"Unknown")}</div>
-        </div>
-        <div class="id">${escapeHtml(p.affiliation||"Unaligned")}</div>
-        <div class="note">${escapeHtml(p.notes||"No notes.")}</div>
-      </div>
-      <div class="actions">
-        <button class="btn danger" type="button" data-act="delete-poi" data-id="${escapeHtml(p.id||"")}">Delete</button>
-      </div>
-    </div>`).join("");
-
-  div.innerHTML=`
-    <p class="year">POI</p>
-    <p><strong>Persons of Interest</strong></p>
-    <div class="grid">
-      <section class="section" aria-label="Add person of interest">
-        <h4>Add Character</h4>
-        <form id="poiForm" class="field">
-          <label for="poiName">Name</label>
-          <input id="poiName" name="name" type="text" maxlength="120" required />
-          <label for="poiAffiliation">Affiliation</label>
-          <input id="poiAffiliation" name="affiliation" type="text" maxlength="120" />
-          <label for="poiImage">Image URL</label>
-          <input id="poiImage" name="image" type="text" maxlength="2048" placeholder="https://example.com/character.jpg" />
-          <label for="poiNotes">Notes</label>
-          <textarea id="poiNotes" name="notes" maxlength="1200"></textarea>
-          <div class="row" style="margin-top:10px;">
-            <button class="btn primary" type="submit">Add Person</button>
-          </div>
-        </form>
-      </section>
-      <section class="section" aria-label="Persons of interest list">
-        <h4>Tracked Individuals</h4>
-        <div class="list" id="poiList">
-          ${listHtml || `<p class="note">No persons recorded.</p>`}
-        </div>
-      </section>
-    </div>`;
-  return div;
-}
-
 function renderContent(){
   contentRoot.innerHTML="";
   const profile=state.chapters.find(c=>c.id==="profile");
@@ -336,7 +271,6 @@ function renderContent(){
     if(ch.id==="profile") continue;
     contentRoot.appendChild(makeBox(ch));
   }
-  contentRoot.appendChild(renderPersonsBox());
   contentRoot.appendChild(renderRevisionBox());
   refreshBoxesCache();
 }
@@ -345,7 +279,6 @@ function getSidebarChapters(){
   const out=[];
   const profile=state.chapters.find(c=>c.id==="profile");
   if(profile) out.push({id:profile.id,tag:profile.tag||"CORE",label:profile.label||"Profile"});
-  out.push({id:"persons-of-interest",tag:"POI",label:"Persons of Interest"});
   out.push({id:"revision-log",tag:"REV",label:"Revision Log"});
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
@@ -370,79 +303,6 @@ document.addEventListener("click",(e)=>{
   const a=e.target.closest('a[data-target]'); if(!a) return;
   e.preventDefault(); smoothScrollTo(a.getAttribute("data-target")); closeDrawer();
 });
-
-contentRoot.addEventListener("submit",(e)=>{
-  const form=e.target.closest("#poiForm");
-  if(!form) return;
-  e.preventDefault();
-  const fd=new FormData(form);
-  const name=String(fd.get("name")||"").trim();
-  const affiliation=String(fd.get("affiliation")||"").trim();
-  const image=String(fd.get("image")||"").trim();
-  const notes=String(fd.get("notes")||"").trim();
-  if(!name){
-    const nameInput=form.querySelector("#poiName");
-    if(nameInput) nameInput.focus();
-    return;
-  }
-  state.persons.unshift({
-    id:makeId("poi"),
-    name,
-    affiliation:affiliation||"Unaligned",
-    image:image||"",
-    notes:notes||"No notes."
-  });
-  saveState();
-  renderAll();
-  smoothScrollTo("persons-of-interest");
-});
-
-contentRoot.addEventListener("click",(e)=>{
-  const btn=e.target.closest('button[data-act="delete-poi"]');
-  if(!btn) return;
-  const id=btn.getAttribute("data-id");
-  if(!id) return;
-  state.persons=state.persons.filter(p=>p.id!==id);
-  saveState();
-  renderAll();
-  smoothScrollTo("persons-of-interest");
-});
-
-function hidePoiPreview(){
-  activePoiCard=null;
-  poiPreview.classList.remove("open");
-}
-function movePoiPreview(x,y){
-  const offset=16;
-  const maxX=window.innerWidth-poiPreview.offsetWidth-8;
-  const maxY=window.innerHeight-poiPreview.offsetHeight-8;
-  poiPreview.style.left=Math.max(8,Math.min(x+offset,maxX))+"px";
-  poiPreview.style.top=Math.max(8,Math.min(y+offset,maxY))+"px";
-}
-contentRoot.addEventListener("mouseover",(e)=>{
-  const card=e.target.closest(".poi-card[data-person-image]");
-  if(!card || !contentRoot.contains(card)) return;
-  const image=card.getAttribute("data-person-image");
-  if(!image) return;
-  activePoiCard=card;
-  poiPreviewImg.src=image;
-  poiPreviewCaption.textContent=card.getAttribute("data-person-name")||"Unknown";
-  poiPreview.classList.add("open");
-  movePoiPreview(e.clientX,e.clientY);
-});
-contentRoot.addEventListener("mousemove",(e)=>{
-  if(!activePoiCard) return;
-  movePoiPreview(e.clientX,e.clientY);
-});
-contentRoot.addEventListener("mouseout",(e)=>{
-  if(!activePoiCard) return;
-  const leavingCard=e.target.closest(".poi-card");
-  if(!leavingCard || leavingCard!==activePoiCard) return;
-  if(leavingCard.contains(e.relatedTarget)) return;
-  hidePoiPreview();
-});
-contentRoot.addEventListener("scroll",hidePoiPreview,true);
-window.addEventListener("scroll",hidePoiPreview,true);
 
 /* Drawer */
 const openBtn=document.getElementById("openDrawer");
