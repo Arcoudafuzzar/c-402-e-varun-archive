@@ -553,14 +553,6 @@
   .field input,.field textarea{width:100%;border-radius:10px;border:1px solid #2b3642;background:rgba(8,12,16,.95);color:var(--text);
     padding:10px;font-family:Consolas,monospace;font-size:13px;}
   .field textarea{min-height:120px;resize:vertical;}
-  .poi-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 12px 0;}
-  .poi-controls input,.poi-controls select{
-    border-radius:10px;border:1px solid #2b3642;background:rgba(8,12,16,.95);color:var(--text);
-    padding:8px 10px;font-family:inherit;font-size:12px;
-  }
-  .poi-filters{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);}
-  .poi-filters label{display:flex;align-items:center;gap:6px;border:1px solid #2b3642;border-radius:999px;padding:4px 8px;background:rgba(12,16,20,.7);}
-  .poi-filters input{accent-color:#8fe3a6;}
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
   .btn{border:1px solid #2b3642;background:rgba(18,22,27,.9);color:var(--text);border-radius:10px;padding:9px 12px;font-family:var(--royal);
     font-size:12px;cursor:pointer;user-select:none;}
@@ -578,36 +570,6 @@
   .item .meta .id{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:440px;}
   .item .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
   .note{font-size:11px;color:var(--muted);line-height:1.4;}
-  .poi-preview{
-    position:fixed;
-    z-index:35;
-    display:none;
-    width:180px;
-    border:1px solid #2b3642;
-    border-radius:12px;
-    background:rgba(8,12,16,.96);
-    box-shadow:var(--shadow);
-    padding:8px;
-    pointer-events:none;
-  }
-  .poi-preview.open{display:block;}
-  .poi-preview img{
-    display:block;
-    width:100%;
-    height:180px;
-    object-fit:cover;
-    border-radius:8px;
-    border:1px solid #24303b;
-    background:#0c1117;
-  }
-  .poi-preview .caption{
-    margin-top:6px;
-    font-size:11px;
-    color:var(--text);
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
   .sidebar{display:none;}
   @media (max-width:980px){.layout{padding-top:14px;}.search{width:52vw;min-width:180px;}}
   @media (max-width:560px){.brand{min-width:0;}.brand .subtitle{display:none;}.search{width:56vw;}body{font-size:14px;}}
@@ -804,15 +766,6 @@ let state=loadState();
 const contentRoot=document.getElementById("contentRoot");
 const chaptersSidebar=document.getElementById("chaptersSidebar");
 const chaptersDrawer=document.getElementById("chaptersDrawer");
-const poiPreview=document.createElement("div");
-poiPreview.className="poi-preview";
-poiPreview.innerHTML='<img id="poiPreviewImg" alt="Character preview" /><div class="caption" id="poiPreviewCaption"></div>';
-document.body.appendChild(poiPreview);
-const poiPreviewImg=document.getElementById("poiPreviewImg");
-const poiPreviewCaption=document.getElementById("poiPreviewCaption");
-let activePoiCard=null;
-let activePoiSrc="";
-
 function escapeHtml(s){
   return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
@@ -861,108 +814,6 @@ function renderRevisionBox(){
   return div;
 }
 
-let poiSearch="";
-let poiSort="name";
-let poiFilters=new Set();
-
-function renderPersonsBox(){
-  const div=document.createElement("div");
-  div.className="archive-box";
-  div.id="persons-of-interest";
-  div.dataset.kind="persons";
-  const headerRow=document.createElement("div");
-  headerRow.className="box-header";
-  headerRow.innerHTML=`<span class="box-tag">POI</span><span class="box-title">Persons of Interest</span>`;
-  div.appendChild(headerRow);
-  ["lt","rt","lb","rb"].forEach(pos=>{
-    const c=document.createElement("span");
-    c.className=`corner-latch ${pos}`;
-    div.appendChild(c);
-  });
-  const body=document.createElement("div");
-  body.className="box-body";
-
-  const people=structuredClone(state.persons||[]);
-  const affiliations=[...new Set(people.map(p=>String(p.affiliation||"Unaligned").trim()||"Unaligned"))].sort();
-  const filterSet=new Set(poiFilters);
-  const filtered=people.filter(p=>{
-    const name=String(p.name||"").toLowerCase();
-    const aff=String(p.affiliation||"Unaligned").toLowerCase();
-    const notes=String(p.notes||"").toLowerCase();
-    const q=poiSearch.toLowerCase();
-    const matchesSearch=!q || name.includes(q) || aff.includes(q) || notes.includes(q);
-    const matchesFilter=filterSet.size===0 || filterSet.has(String(p.affiliation||"Unaligned"));
-    return matchesSearch && matchesFilter;
-  });
-  filtered.sort((a,b)=>{
-    if(poiSort==="affiliation"){
-      const aa=String(a.affiliation||"Unaligned").toLowerCase();
-      const bb=String(b.affiliation||"Unaligned").toLowerCase();
-      const cmp=aa.localeCompare(bb);
-      if(cmp!==0) return cmp;
-    }
-    return String(a.name||"").toLowerCase().localeCompare(String(b.name||"").toLowerCase());
-  });
-
-  const controls=`
-    <div class="poi-controls">
-      <input id="poiSearch" type="search" placeholder="Search POI..." value="${escapeHtml(poiSearch)}" />
-      <select id="poiSort">
-        <option value="name" ${poiSort==="name"?"selected":""}>Sort: Name</option>
-        <option value="affiliation" ${poiSort==="affiliation"?"selected":""}>Sort: Affiliation</option>
-      </select>
-    </div>
-    <div class="poi-filters" id="poiFilters">
-      ${affiliations.map(a=>`
-        <label><input type="checkbox" data-aff="${escapeHtml(a)}" ${filterSet.has(a)?"checked":""}/> ${escapeHtml(a)}</label>
-      `).join("") || `<span class="note">No factions to filter.</span>`}
-    </div>`;
-
-  const listHtml=filtered.map(p=>`
-    <div class="item poi-card" data-person-id="${escapeHtml(p.id||"")}" data-person-image="${escapeHtml(p.image||"")}" data-person-name="${escapeHtml(p.name||"Unknown")}">
-      <div class="meta">
-        <div class="t">
-          <span class="pill">POI</span>
-          <div class="label">${escapeHtml(p.name||"Unknown")}</div>
-        </div>
-        <div class="id">${escapeHtml(p.affiliation||"Unaligned")}</div>
-        <div class="note">${escapeHtml(p.notes||"No notes.")}</div>
-      </div>
-      <div class="actions">
-        <button class="btn danger" type="button" data-act="delete-poi" data-id="${escapeHtml(p.id||"")}">Delete</button>
-      </div>
-    </div>`).join("");
-
-  body.innerHTML=`
-    ${controls}
-    <div class="grid">
-      <section class="section" aria-label="Add person of interest">
-        <h4>Add Character</h4>
-        <form id="poiForm" class="field">
-          <label for="poiName">Name</label>
-          <input id="poiName" name="name" type="text" maxlength="120" required />
-          <label for="poiAffiliation">Affiliation</label>
-          <input id="poiAffiliation" name="affiliation" type="text" maxlength="120" />
-          <label for="poiImage">Image URL</label>
-          <input id="poiImage" name="image" type="text" maxlength="2048" placeholder="https://example.com/character.jpg" />
-          <label for="poiNotes">Notes</label>
-          <textarea id="poiNotes" name="notes" maxlength="1200"></textarea>
-          <div class="row" style="margin-top:10px;">
-            <button class="btn primary" type="submit">Add Person</button>
-          </div>
-        </form>
-      </section>
-      <section class="section" aria-label="Persons of interest list">
-        <h4>Tracked Individuals</h4>
-        <div class="list" id="poiList">
-          ${listHtml || `<p class="note">No persons recorded.</p>`}
-        </div>
-      </section>
-    </div>`;
-  div.appendChild(body);
-  return div;
-}
-
 function renderContent(){
   contentRoot.innerHTML="";
   const profile=state.chapters.find(c=>c.id==="profile");
@@ -977,8 +828,6 @@ function renderContent(){
     ensureVarunLink(ch);
     contentRoot.appendChild(makeBox(ch));
   }
-  contentRoot.appendChild(renderPersonsBox());
-  contentRoot.appendChild(renderRevisionBox());
   refreshBoxesCache();
 }
 
@@ -997,8 +846,6 @@ function getSidebarChapters(){
   const out=[];
   const profile=state.chapters.find(c=>c.id==="profile");
   if(profile) out.push({id:profile.id,tag:profile.tag||"CORE",label:profile.label||"Profile"});
-  out.push({id:"persons-of-interest",tag:"POI",label:"Persons of Interest"});
-  out.push({id:"revision-log",tag:"REV",label:"Revision Log"});
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
     out.push({id:ch.id,tag:ch.tag||"—",label:ch.label||ch.id});
@@ -1157,114 +1004,6 @@ contentRoot.addEventListener("click",(e)=>{
   e.stopPropagation();
   window.location.href=href;
 });
-
-contentRoot.addEventListener("submit",(e)=>{
-  const form=e.target.closest("#poiForm");
-  if(!form) return;
-  e.preventDefault();
-  const fd=new FormData(form);
-  const name=String(fd.get("name")||"").trim();
-  const affiliation=String(fd.get("affiliation")||"").trim();
-  const image=String(fd.get("image")||"").trim();
-  const notes=String(fd.get("notes")||"").trim();
-  if(!name){
-    const nameInput=form.querySelector("#poiName");
-    if(nameInput) nameInput.focus();
-    return;
-  }
-  state.persons.unshift({
-    id:makeId("poi"),
-    name,
-    affiliation:affiliation||"Unaligned",
-    image:image||"",
-    notes:notes||"No notes."
-  });
-  saveState();
-  form.reset();
-  renderAll();
-  smoothScrollTo("persons-of-interest");
-});
-
-contentRoot.addEventListener("click",(e)=>{
-  const btn=e.target.closest('button[data-act="delete-poi"]');
-  if(!btn) return;
-  const id=btn.getAttribute("data-id");
-  if(!id) return;
-  state.persons=state.persons.filter(p=>p.id!==id);
-  saveState();
-  renderAll();
-  smoothScrollTo("persons-of-interest");
-});
-
-contentRoot.addEventListener("input",(e)=>{
-  const input=e.target.closest("#poiSearch");
-  if(!input) return;
-  poiSearch=input.value;
-  renderAll();
-});
-contentRoot.addEventListener("change",(e)=>{
-  const sel=e.target.closest("#poiSort");
-  if(sel){
-    poiSort=sel.value;
-    renderAll();
-    return;
-  }
-  const chk=e.target.closest("#poiFilters input[type=\"checkbox\"]");
-  if(chk){
-    const aff=chk.getAttribute("data-aff")||"";
-    if(chk.checked) poiFilters.add(aff);
-    else poiFilters.delete(aff);
-    renderAll();
-  }
-});
-
-function hidePoiPreview(){
-  activePoiCard=null;
-  poiPreview.classList.remove("open");
-}
-function movePoiPreview(x,y){
-  const offset=16;
-  const maxX=window.innerWidth-poiPreview.offsetWidth-8;
-  const maxY=window.innerHeight-poiPreview.offsetHeight-8;
-  poiPreview.style.left=Math.max(8,Math.min(x+offset,maxX))+"px";
-  poiPreview.style.top=Math.max(8,Math.min(y+offset,maxY))+"px";
-}
-contentRoot.addEventListener("mouseover",(e)=>{
-  const card=e.target.closest(".poi-card[data-person-image]");
-  if(!card || !contentRoot.contains(card)) return;
-  const image=String(card.getAttribute("data-person-image")||"").trim();
-  if(!image) return;
-  activePoiCard=card;
-  if(activePoiSrc!==image){
-    activePoiSrc=image;
-    poiPreviewImg.src=image;
-  }
-  poiPreviewCaption.textContent=card.getAttribute("data-person-name")||"Unknown";
-  if(poiPreviewImg.complete && poiPreviewImg.naturalWidth>0){
-    poiPreview.classList.add("open");
-  } else {
-    poiPreviewImg.onload=()=>{
-      if(activePoiCard===card) poiPreview.classList.add("open");
-    };
-    poiPreviewImg.onerror=()=>{
-      if(activePoiCard===card) poiPreview.classList.remove("open");
-    };
-  }
-  movePoiPreview(e.clientX,e.clientY);
-});
-contentRoot.addEventListener("mousemove",(e)=>{
-  if(!activePoiCard) return;
-  movePoiPreview(e.clientX,e.clientY);
-});
-contentRoot.addEventListener("mouseout",(e)=>{
-  if(!activePoiCard) return;
-  const leavingCard=e.target.closest(".poi-card");
-  if(!leavingCard || leavingCard!==activePoiCard) return;
-  if(leavingCard.contains(e.relatedTarget)) return;
-  hidePoiPreview();
-});
-contentRoot.addEventListener("scroll",hidePoiPreview,true);
-window.addEventListener("scroll",hidePoiPreview,true);
 
 /* Drawer */
 const openBtn=document.getElementById("openDrawer");
@@ -1785,3 +1524,7 @@ window.addEventListener("resize",updateTimeline);
 </script>
 </body>
 </html>
+
+
+
+
