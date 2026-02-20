@@ -798,10 +798,12 @@ function loadState(){
     const chapters=parsed.chapters;
     if(!chapters.some(c=>c && c.id==="profile"))
       chapters.unshift(structuredClone(DEFAULT_CHAPTERS.find(c=>c.id==="profile")));
+    const entities=Array.isArray(parsed.entities)?parsed.entities:structuredClone(DEFAULT_ENTITIES);
     return {
       chapters,
       revisions:parsed.revisions,
-      persons:Array.isArray(parsed.persons)?parsed.persons:structuredClone(DEFAULT_PERSONS)
+      persons:Array.isArray(parsed.persons)?parsed.persons:structuredClone(DEFAULT_PERSONS),
+      entities
     };
   }catch(e){
     return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS),entities:structuredClone(DEFAULT_ENTITIES)};
@@ -810,7 +812,7 @@ function loadState(){
 function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
 let state=loadState();
 let dbSearch="";
-let selectedEntityId=state.entities[0]?state.entities[0].id:null;
+let selectedEntityId=(state.entities && state.entities[0])?state.entities[0].id:null;
 
 const contentRoot=document.getElementById("contentRoot");
 function escapeHtml(s){
@@ -937,8 +939,8 @@ function autolinkEntities(root){
   }
   const names=[...map.keys()].sort((a,b)=>b.length-a.length);
   if(!names.length) return;
-  const pattern=names.map(n=>n.replace(/[.*+?^${}()|[\]\]/g,"\$&")).join("|");
-  const re=new RegExp(`(${pattern})`,"gi");
+  const pattern=names.map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|");
+  const re=new RegExp(`\\b(${pattern})\\b`,"gi");
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);
   const nodes=[];
   while(walker.nextNode()){
@@ -1668,19 +1670,20 @@ if(hasAdminUI){
   });
   resetBtn.addEventListener("click",()=>{
     if(!confirm("Reset local data to defaults?")) return;
-    state={chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS)};
+    state={chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS),entities:structuredClone(DEFAULT_ENTITIES)};
     saveState(); renderAll(); renderAdminLists(); resetChapterForm(); resetRevForm();
   });
   importBtn.addEventListener("click",()=>{
     try{
       const parsed=JSON.parse(importArea.value);
       if(!parsed||!Array.isArray(parsed.chapters)||!Array.isArray(parsed.revisions)){
-        alert("JSON must be {chapters:[...], revisions:[...], persons:[...]}"); return;
+        alert("JSON must be {chapters:[...], revisions:[...], persons:[...], entities:[...]}"); return;
       }
       state={
         chapters:parsed.chapters,
         revisions:parsed.revisions,
-        persons:Array.isArray(parsed.persons)?parsed.persons:[]
+        persons:Array.isArray(parsed.persons)?parsed.persons:[],
+        entities:Array.isArray(parsed.entities)?parsed.entities:structuredClone(DEFAULT_ENTITIES)
       };
       saveState(); renderAll(); renderAdminLists(); resetChapterForm(); resetRevForm(); alert("Import complete.");
     }catch(e){alert("Invalid JSON.");}
