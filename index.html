@@ -832,6 +832,7 @@ function renderRevisionBox(){
 function renderContent(){
   contentRoot.innerHTML="";
   const profile=state.chapters.find(c=>c.id==="profile");
+  if(profile) ensureProfileText(profile);
   const tabs=document.createElement("div");
   tabs.className="tabs-root";
 
@@ -891,6 +892,27 @@ function ensureVarunLink(ch){
     "<a class=\"poi-link\" href=\"poi.html#persons-of-interest\" data-poi=\"varun\">Magos Varun<span class=\"poi-tooltip\" aria-hidden=\"true\"></span></a>"
   );
   ch.body=linked;
+}
+
+function ensureProfileText(ch){
+  if(!ch || ch.id!=="profile") return;
+  const body=String(ch.body||"");
+  if(body.includes("Vox‑Triumphant of the Red Cog")) return;
+  ch.body=`<p><strong>Designation:</strong> C-402 Epsilon Varun</p>
+<p><strong>Omnissian Title:</strong> Vox‑Triumphant of the Red Cog</p>
+<p><strong>Rank:</strong> Magos Dominus // Exploratory Division</p>
+<p><strong>Forge‑Tithe:</strong> Mars // Sub‑Node Ferrum‑7</p>
+<p><strong>Biotopic State:</strong> 78.4% sanctified augmentation, 21.6% residual flesh</p>
+<p><strong>Self‑Praise Litany:</strong> “I am the calibrated will of Mars; my circuits do not err.”</p>
+<p><strong>Self‑Praise Litany:</strong> “Through me the Omnissiah is quantified; through my rites, relics awaken.”</p>
+<p><strong>Primary Wargear & Rites:</strong> Delta‑III mechadendrite cluster (Injector, Plasma micro‑torch, Data‑spike), Mk.IV cognition lattice, dual‑auspex servo‑skull</p>
+<p><strong>Mandate:</strong> Recover and exalt the relics of the Dark Age into present utility</p>
+<p><strong>Vessel:</strong> The Last Rose (Manufactorum Oversight)</p>
+<p><strong>Status:</strong> Active // Classified</p>
+<p><strong>Archive Span:</strong> 50 Years Prior to Current Imperial Date</p>
+<p><strong>Archivist Notes:</strong> Tissue excision logged at 12.03% mass, synaptic relay latency 0.014s, ocular augury variance ±0.7%. Cogitation cycles audited 3,600/hr under Rite‑Protocol 9.17‑Theta. Current sanctity index: 96.2%. Seal‑code: Magenta‑7 // Verified.</p>
+<p><strong>Reliquary Index:</strong> STC fragment integrity 23.0% (Ref: Vault‑Sigma/IX‑A), memory shard provenance 61.4% (Ref: Canticle of Glass, Vol. IV), noosphere bleed detected 0.003% during Rite of the Sealed Cog.</p>
+<p><strong>Unknown Lore Addendum:</strong> Cross‑reference “Annals of K‑Tor // Basilikon Echo”, datum‑lock pending (Redactor‑Magi: 3). Observed variance in Ossuary‑Sigil 44‑Kappa, hypothesis logged for later exegesis.</p>`;
 }
 
 function getSidebarChapters(){
