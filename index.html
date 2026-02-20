@@ -769,8 +769,11 @@ function loadState(){
     if(!raw) return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS)};
     const parsed=JSON.parse(raw);
     if(!parsed||!Array.isArray(parsed.chapters)||!Array.isArray(parsed.revisions)) throw new Error("bad");
+    const chapters=parsed.chapters;
+    if(!chapters.some(c=>c && c.id==="profile"))
+      chapters.unshift(structuredClone(DEFAULT_CHAPTERS.find(c=>c.id==="profile")));
     return {
-      chapters:parsed.chapters,
+      chapters,
       revisions:parsed.revisions,
       persons:Array.isArray(parsed.persons)?parsed.persons:structuredClone(DEFAULT_PERSONS)
     };
@@ -832,7 +835,11 @@ function renderRevisionBox(){
 
 function renderContent(){
   contentRoot.innerHTML="";
-  const profile=state.chapters.find(c=>c.id==="profile");
+  let profile=state.chapters.find(c=>c.id==="profile");
+  if(!profile){
+    profile=structuredClone(DEFAULT_CHAPTERS.find(c=>c.id==="profile"));
+    state.chapters.unshift(profile);
+  }
   if(profile) ensureProfileText(profile);
   const tabs=document.createElement("div");
   tabs.className="tabs-root";
@@ -916,7 +923,31 @@ function ensureProfileText(ch){
 <p><strong>Unknown Lore Addendum:</strong> Cross‑reference “Annals of K‑Tor // Basilikon Echo”, datum‑lock pending (Redactor‑Magi: 3). Observed variance in Ossuary‑Sigil 44‑Kappa, hypothesis logged for later exegesis.</p>`;
 }
 
-function renderSidebars(){}\n
+const chaptersSidebar=document.getElementById("chaptersSidebar");
+const chaptersDrawer=document.getElementById("chaptersDrawer");
+
+function getSidebarChapters(){
+  const out=[];
+  const profile=state.chapters.find(c=>c.id==="profile");
+  if(profile) out.push({id:profile.id,tag:profile.tag||"CORE",label:profile.label||"Profile"});
+  for(const ch of state.chapters){
+    if(ch.id==="profile") continue;
+    out.push({id:ch.id,tag:ch.tag||"�",label:ch.label||ch.id});
+  }
+  return out;
+}
+
+function renderSidebars(){
+  if(!chaptersSidebar || !chaptersDrawer) return;
+  const links=getSidebarChapters();
+  const html=links.map(c=>`
+    <a href="#${c.id}" data-target="${c.id}">
+      <span class="tag">${escapeHtml(c.tag)}</span>
+      <span class="label">${escapeHtml(c.label)}</span>
+    </a>`).join("");
+  chaptersSidebar.innerHTML=html;
+  chaptersDrawer.innerHTML=html;
+}
 const chapterPopup=document.getElementById("chapterPopup");
 const closeChapterPopup=document.getElementById("closeChapterPopup");
 const chapterPopupHeader=document.getElementById("chapterPopupHeader");
@@ -1613,6 +1644,7 @@ window.addEventListener("resize",updateTimeline);
 </script>
 </body>
 </html>
+
 
 
 
