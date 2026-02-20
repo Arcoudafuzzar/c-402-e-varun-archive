@@ -65,8 +65,51 @@
   footer{margin-top:22px;font-size:12px;color:#555;border-top:1px solid #222;padding-top:15px;}
   .hidden{display:none!important;}
   mark{background:rgba(127,179,255,.22);color:var(--text);padding:0 2px;border-radius:4px;}
-  .poi-link{color:#8fe3a6;text-decoration:none;border-bottom:1px dotted rgba(143,227,166,.6);}
-  .poi-link:hover{color:#b9ffd0;border-bottom-color:#b9ffd0;}
+  .poi-link{
+    color:#8fe3a6;
+    text-decoration:none;
+    border-bottom:1px dotted rgba(143,227,166,.6);
+    text-shadow:0 0 8px rgba(31,143,58,.35);
+    position:relative;
+    white-space:nowrap;
+  }
+  .poi-link:hover{
+    color:#c7ffd8;
+    border-bottom-color:#c7ffd8;
+    text-shadow:0 0 10px rgba(31,143,58,.6);
+  }
+  .poi-link .poi-tooltip{
+    position:absolute;
+    left:0;
+    bottom:120%;
+    width:44px;
+    height:44px;
+    border-radius:8px;
+    border:1px solid rgba(31,143,58,.55);
+    background:
+      radial-gradient(circle at 30% 30%, rgba(31,143,58,.18), rgba(0,0,0,0) 60%),
+      rgba(8,12,10,.95);
+    box-shadow:0 10px 24px rgba(0,0,0,.45);
+    opacity:0;
+    transform:translateY(6px);
+    transition:opacity .15s ease, transform .15s ease;
+    pointer-events:none;
+    z-index:5;
+  }
+  .poi-link .poi-tooltip::before{
+    content:"";
+    position:absolute;
+    inset:6px;
+    border-radius:6px;
+    background:
+      url("https://static.wikia.nocookie.net/warhammer40k/images/c/c1/Scribe_Servo-Skull.png/revision/latest/scale-to-width-down/250?cb=20141203211955")
+      center/cover no-repeat;
+    filter:drop-shadow(0 0 6px rgba(31,143,58,.4));
+  }
+  .poi-link:hover .poi-tooltip{
+    opacity:1;
+    transform:translateY(0);
+  }
   .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;opacity:0;pointer-events:none;transition:opacity .18s ease;}
   .drawer{position:fixed;top:0;left:0;height:100%;width:290px;background:rgba(18,22,27,.96);border-right:1px solid var(--border);
     z-index:21;transform:translateX(-102%);transition:transform .18s ease;padding:14px;overflow:auto;}
@@ -465,7 +508,7 @@ const DEFAULT_CHAPTERS=[
   {id:"y-7",tag:"-7",label:"Servo-skull Upgrade",body:
 `<p class="year">-7 Years</p><p>Servo-skull reconnaissance unit upgraded. Dual ocular configuration implemented: one skeletal cavity retained for symbolic function; one active auspex scanner lens installed.</p>`},
   {id:"y-current",tag:"NOW",label:"Current Era",body:
-`<p class="year">Current Era</p><p>Magos Varun continues exploratory operations and battlefield technological reclamation aboard <em>The Last Rose</em>. Multiple data clusters remain <span class="classified">CLASSIFIED</span>.</p>`}
+`<p class="year">Current Era</p><p><a class="poi-link" href="#persons-of-interest" data-poi="varun">Magos Varun<span class="poi-tooltip" aria-hidden="true"></span></a> continues exploratory operations and battlefield technological reclamation aboard <em>The Last Rose</em>. Multiple data clusters remain <span class="classified">CLASSIFIED</span>.</p>`}
 ];
 const DEFAULT_REVISIONS=[{id:"rev-1",date:"M41.999 — Initial Archive Compilation",note:"First public Noosphere Archive rendering. Search + chapters index online."}];
 
@@ -504,7 +547,6 @@ function makeBox(ch){
   div.dataset.kind="chapter";
   div.dataset.chapterId=ch.id;
   div.innerHTML=ch.body||"";
-  linkPoiInBox(div);
   return div;
 }
 
@@ -534,51 +576,6 @@ function renderContent(){
   }
   contentRoot.appendChild(renderRevisionBox());
   refreshBoxesCache();
-}
-
-function linkPoiInBox(root){
-  if(!root || !state.persons || !state.persons.length) return;
-  const names=state.persons
-    .map(p=>String(p.name||"").trim())
-    .filter(Boolean);
-  if(!names.length) return;
-  const pattern=names
-    .sort((a,b)=>b.length-a.length)
-    .map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))
-    .join("|");
-  if(!pattern) return;
-  const re=new RegExp(`\\b(${pattern})\\b`,"gi");
-  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);
-  const nodes=[];
-  while(walker.nextNode()){
-    const n=walker.currentNode;
-    if(!n.nodeValue || !re.test(n.nodeValue)) { re.lastIndex=0; continue; }
-    const parent=n.parentElement;
-    if(!parent) { re.lastIndex=0; continue; }
-    const tag=parent.tagName.toLowerCase();
-    if(["a","button","textarea","input","mark"].includes(tag)) { re.lastIndex=0; continue; }
-    nodes.push(n);
-    re.lastIndex=0;
-  }
-  for(const n of nodes){
-    const text=n.nodeValue;
-    if(!text) continue;
-    const frag=document.createDocumentFragment();
-    let last=0;
-    text.replace(re,(match,offset)=>{
-      frag.appendChild(document.createTextNode(text.slice(last,offset)));
-      const a=document.createElement("a");
-      a.className="poi-link";
-      a.href="poi.html#persons-of-interest";
-      a.dataset.poi=match.toLowerCase();
-      a.textContent=match;
-      frag.appendChild(a);
-      last=offset+match.length;
-      return match;
-    });
-    frag.appendChild(document.createTextNode(text.slice(last)));
-    n.parentNode.replaceChild(frag,n);
-  }
 }
 
 function getSidebarChapters(){
@@ -682,6 +679,14 @@ document.addEventListener("click",(e)=>{
   e.preventDefault();
   smoothScrollTo(targetId);
   closeDrawer();
+});
+
+document.addEventListener("click",(e)=>{
+  const link=e.target.closest("a.poi-link");
+  if(!link) return;
+  if(link.getAttribute("href")!=="#persons-of-interest") return;
+  e.preventDefault();
+  smoothScrollTo("persons-of-interest");
 });
 
 /* Drawer */
