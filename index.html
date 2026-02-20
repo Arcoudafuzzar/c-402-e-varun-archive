@@ -928,11 +928,9 @@ const chaptersDrawer=document.getElementById("chaptersDrawer");
 
 function getSidebarChapters(){
   const out=[];
-  const profile=state.chapters.find(c=>c.id==="profile");
-  if(profile) out.push({id:profile.id,tag:profile.tag||"CORE",label:profile.label||"Profile"});
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
-    out.push({id:ch.id,tag:ch.tag||"â—",label:ch.label||ch.id});
+    out.push({id:ch.id,tag:ch.tag||"??",label:ch.label||ch.id});
   }
   return out;
 }
