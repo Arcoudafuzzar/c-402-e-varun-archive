@@ -558,6 +558,24 @@
   .poi-tab-item{border:1px solid #24303b;border-radius:10px;background:rgba(12,16,20,.75);padding:10px;display:flex;justify-content:space-between;gap:10px;}
   .poi-tab-item a{color:#8fe3a6;text-decoration:none;}
   .poi-tab-item a:hover{text-decoration:underline;color:#c7ffd8;}
+  .db-layout{display:grid;grid-template-columns:1fr 1.4fr;gap:14px;}
+  @media (max-width:900px){.db-layout{grid-template-columns:1fr;}}
+  .db-panel{border:1px solid #24303b;border-radius:12px;background:rgba(12,16,20,.75);padding:12px;}
+  .db-panel h4{margin:0 0 10px 0;color:var(--text);font-size:12px;letter-spacing:.8px;font-family:var(--royal);}
+  .db-search{display:flex;gap:8px;margin-bottom:10px;}
+  .db-search input{flex:1;border-radius:10px;border:1px solid #2b3642;background:rgba(8,12,16,.95);color:var(--text);padding:8px 10px;font-family:inherit;font-size:12px;}
+  .db-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto;padding-right:4px;}
+  .db-item{border:1px solid #24303b;border-radius:10px;background:rgba(8,12,16,.85);padding:8px;cursor:pointer;}
+  .db-item.active{border-color:rgba(31,143,58,.9);box-shadow:0 0 0 1px rgba(31,143,58,.25);}
+  .db-item .name{font-size:12px;color:var(--text);}
+  .db-item .type{font-size:11px;color:var(--muted);}
+  .db-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
+  .db-tag{font-size:10px;border:1px solid #2b3642;border-radius:999px;padding:2px 6px;color:#8fe3a6;}
+  .db-fields{font-size:12px;color:var(--text);}
+  .db-fields p{margin:6px 0;}
+  .entity-link{color:#8fe3a6;text-decoration:none;border-bottom:1px dotted rgba(143,227,166,.6);}
+  .entity-link:hover{color:#c7ffd8;text-shadow:0 0 8px rgba(31,143,58,.45);border-bottom-color:#c7ffd8;}
+
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   @media (max-width:840px){.grid{grid-template-columns:1fr;}}
   .section{border:1px solid #24303b;border-radius:12px;padding:12px;background:rgba(12,16,20,.75);}
@@ -617,6 +635,11 @@
   <div style="height:12px;"></div>
   <div class="chapters" id="chaptersDrawer"></div>
   <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
+      <div class="row" id="archiveTools" style="margin-top:10px;gap:8px;">
+        <button class="btn" id="exportArchive" type="button">Export Archive</button>
+        <button class="btn" id="importArchive" type="button">Import Archive</button>
+        <input id="importFile" type="file" accept="application/json" style="display:none" />
+      </div>
 </aside>
 
 <div class="app">
@@ -648,6 +671,11 @@
       <h3>CHAPTER LIST</h3>
       <div class="chapters" id="chaptersSidebar"></div>
       <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
+      <div class="row" id="archiveTools" style="margin-top:10px;gap:8px;">
+        <button class="btn" id="exportArchive" type="button">Export Archive</button>
+        <button class="btn" id="importArchive" type="button">Import Archive</button>
+        <input id="importFile" type="file" accept="application/json" style="display:none" />
+      </div>
     </aside>
 
     <main>
@@ -756,10 +784,15 @@ const DEFAULT_REVISIONS=[{id:"rev-1",date:"M41.999 — Initial Archive Compilati
 
 function makeId(prefix="id"){return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;}
 const DEFAULT_PERSONS=[];
+const DEFAULT_ENTITIES=[
+  {id:"ent-varun",type:"Person",name:"Magos C-402 Epsilon Varun",tags:["Magos","Adeptus Mechanicus"],description:"Exploratory Magos Dominus and chief relic-warden aboard The Last Rose.",fields:{clearance:"Magenta-7",status:"Active"},relations:[{kind:"serves_on",targetId:"ent-ship-constitution",note:"Manufactorum oversight and expeditionary support."}]},
+  {id:"ent-ship-constitution",type:"Document",name:"Ship Constitution",tags:["Vessel","Protocol"],description:"Sanctioned writ governing The Last Rose and its lawful rites.",fields:{vault:"Sigma/IX-A",integrity:"94.1%"},relations:[{kind:"authorizes",targetId:"ent-ordo-reductor",note:"Codex sealed under Ordo Reductor oversight."}]},
+  {id:"ent-ordo-reductor",type:"Faction",name:"Ordo Reductor",tags:["Mechanicus","Ordo"],description:"Dedicated to siege logic, macro-artillery, and sacred demolition.",fields:{sigil:"O.R-Theta",priority:"High"},relations:[]},
+];
 function loadState(){
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
-    if(!raw) return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS)};
+    if(!raw) return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS),entities:structuredClone(DEFAULT_ENTITIES)};
     const parsed=JSON.parse(raw);
     if(!parsed||!Array.isArray(parsed.chapters)||!Array.isArray(parsed.revisions)) throw new Error("bad");
     const chapters=parsed.chapters;
@@ -771,11 +804,13 @@ function loadState(){
       persons:Array.isArray(parsed.persons)?parsed.persons:structuredClone(DEFAULT_PERSONS)
     };
   }catch(e){
-    return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS)};
+    return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS),entities:structuredClone(DEFAULT_ENTITIES)};
   }
 }
 function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
 let state=loadState();
+let dbSearch="";
+let selectedEntityId=state.entities[0]?state.entities[0].id:null;
 
 const contentRoot=document.getElementById("contentRoot");
 function escapeHtml(s){
@@ -825,6 +860,123 @@ function renderRevisionBox(){
   div.appendChild(body);
   return div;
 }
+
+
+function renderDatabasePanelHTML(){
+  const entities=structuredClone(state.entities||[]);
+  const q=dbSearch.toLowerCase();
+  const filtered=entities.filter(e=>
+    !q || String(e.name||"").toLowerCase().includes(q) || String(e.type||"").toLowerCase().includes(q)
+  );
+  const list=filtered.map(e=>`
+    <div class="db-item ${selectedEntityId===e.id?"active":""}" data-entity-id="${escapeHtml(e.id)}">
+      <div class="name">${escapeHtml(e.name||"Unnamed")}</div>
+      <div class="type">${escapeHtml(e.type||"Unknown")}</div>
+    </div>`).join("") || `<p class="note">No entities match.</p>`;
+
+  const current=entities.find(e=>e.id===selectedEntityId) || entities[0];
+  if(current && !selectedEntityId) selectedEntityId=current.id;
+  const tags=(current&&current.tags||[]).map(t=>`<span class="db-tag">${escapeHtml(t)}</span>`).join("");
+  const fields=current&&current.fields?Object.entries(current.fields).map(([k,v])=>`<p><strong>${escapeHtml(k)}:</strong> ${escapeHtml(String(v))}</p>`).join(""):`<p class="note">No fields recorded.</p>`;
+  const relations=current&&current.relations?current.relations.map(r=>{
+    const target=entities.find(e=>e.id===r.targetId);
+    const tname=target?target.name:r.targetId;
+    return `<p><span class="pill">${escapeHtml(r.kind||"rel")}</span> ${escapeHtml(tname||"Unknown")}${r.note?` ? ${escapeHtml(r.note)}`:""}</p>`;
+  }).join(""):`<p class="note">No relations recorded.</p>`;
+
+  return `
+    <h2>Database</h2>
+    <div class="db-layout">
+      <section class="db-panel">
+        <h4>Entities</h4>
+        <div class="db-search"><input id="dbSearch" type="search" placeholder="Search entities..." value="${escapeHtml(dbSearch)}" /></div>
+        <div class="db-list" id="dbList">${list}</div>
+        <h4 style="margin-top:12px;">Add Entity</h4>
+        <form id="dbAddForm" class="field">
+          <label for="dbType">Type</label>
+          <input id="dbType" name="type" type="text" maxlength="80" required />
+          <label for="dbName">Name</label>
+          <input id="dbName" name="name" type="text" maxlength="120" required />
+          <label for="dbTags">Tags (comma separated)</label>
+          <input id="dbTags" name="tags" type="text" maxlength="200" />
+          <label for="dbDesc">Description</label>
+          <textarea id="dbDesc" name="description" maxlength="1200"></textarea>
+          <div class="row" style="margin-top:10px;">
+            <button class="btn primary" type="submit">Add Entity</button>
+          </div>
+        </form>
+      </section>
+      <section class="db-panel" id="dbDetails">
+        <h4>Details</h4>
+        ${current?`
+          <div class="db-fields">
+            <p><strong>Name:</strong> ${escapeHtml(current.name||"Unnamed")}</p>
+            <p><strong>Type:</strong> ${escapeHtml(current.type||"Unknown")}</p>
+            <div class="db-tags">${tags || "<span class=\"note\">No tags.</span>"}</div>
+            <p>${escapeHtml(current.description||"No description.")}</p>
+            <div class="db-fields">${fields}</div>
+            <div class="db-fields"><p><strong>Relations:</strong></p>${relations}</div>
+          </div>`:`<p class="note">No entity selected.</p>`}
+      </section>
+    </div>`;
+}
+
+
+function updateDatabasePanel(){
+  const panel=document.querySelector('.tab-panel[data-panel="database"]');
+  if(!panel) return;
+  panel.innerHTML=renderDatabasePanelHTML();
+  autolinkEntities(panel);
+}
+
+function autolinkEntities(root){
+  if(!root || !state.entities || !state.entities.length) return;
+  const map=new Map();
+  for(const e of state.entities){
+    if(e && e.name) map.set(e.name.toLowerCase(), e.id);
+  }
+  const names=[...map.keys()].sort((a,b)=>b.length-a.length);
+  if(!names.length) return;
+  const pattern=names.map(n=>n.replace(/[.*+?^${}()|[\]\]/g,"\$&")).join("|");
+  const re=new RegExp(`(${pattern})`,"gi");
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);
+  const nodes=[];
+  while(walker.nextNode()){
+    const n=walker.currentNode;
+    if(!n.nodeValue || !re.test(n.nodeValue)) { re.lastIndex=0; continue; }
+    let p=n.parentElement;
+    let blocked=false;
+    while(p){
+      const tag=p.tagName.toLowerCase();
+      if(["a","button","input","textarea","code","pre","mark"].includes(tag)) { blocked=true; break; }
+      p=p.parentElement;
+    }
+    if(blocked) { re.lastIndex=0; continue; }
+    nodes.push(n);
+    re.lastIndex=0;
+  }
+  for(const n of nodes){
+    const text=n.nodeValue;
+    if(!text) continue;
+    const frag=document.createDocumentFragment();
+    let last=0;
+    text.replace(re,(match,offset)=>{
+      frag.appendChild(document.createTextNode(text.slice(last,offset)));
+      const id=map.get(match.toLowerCase());
+      const a=document.createElement('a');
+      a.className='entity-link';
+      a.href='#';
+      a.dataset.entityId=id||'';
+      a.textContent=match;
+      frag.appendChild(a);
+      last=offset+match.length;
+      return match;
+    });
+    frag.appendChild(document.createTextNode(text.slice(last)));
+    n.parentNode.replaceChild(frag,n);
+  }
+}
+
 
 function renderContent(){
   contentRoot.innerHTML="";
@@ -880,19 +1032,14 @@ function renderContent(){
   const dbPanel=document.createElement("div");
   dbPanel.className="tab-panel";
   dbPanel.dataset.panel="database";
-  const h2c=document.createElement("h2");
-  h2c.textContent="Database";
-  dbPanel.appendChild(h2c);
-  const dbNote=document.createElement("p");
-  dbNote.className="classified";
-  dbNote.textContent="Database node awaiting data ingestion.";
-  dbPanel.appendChild(dbNote);
+  dbPanel.innerHTML=renderDatabasePanelHTML();
 
   tabs.appendChild(profilePanel);
   tabs.appendChild(chronoPanel);
   tabs.appendChild(poiPanel);
   tabs.appendChild(dbPanel);
   contentRoot.appendChild(tabs);
+  autolinkEntities(contentRoot);
   refreshBoxesCache();
 }
 
@@ -933,6 +1080,7 @@ const chaptersDrawer=document.getElementById("chaptersDrawer");
 
 function getSidebarChapters(){
   const out=[];
+  out.push({id:"database",tag:"DB",label:"Database"});
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
     out.push({id:ch.id,tag:ch.tag||"??",label:ch.label||ch.id});
@@ -1047,6 +1195,13 @@ function setPreloadBars(count){
 document.addEventListener("click",(e)=>{
   const a=e.target.closest('a[data-target]'); if(!a) return;
   const targetId=a.getAttribute("data-target");
+  if(targetId==="database"){
+    e.preventDefault();
+    setPageTab("database");
+    updateDatabasePanel();
+    closeDrawer();
+    return;
+  }
   if(targetId){
     const targetEl=document.getElementById(targetId);
     const label=a.querySelector(".label");
@@ -1054,13 +1209,13 @@ document.addEventListener("click",(e)=>{
     clearChapterStageTimers();
     openChapterPreload();
     chapterStageTimers.push(setTimeout(()=>{
-    chapterPreloadStatus.textContent=chapterAwakenings[Math.floor(Math.random()*chapterAwakenings.length)];
-    setPreloadBars(3);
+      chapterPreloadStatus.textContent=chapterAwakenings[Math.floor(Math.random()*chapterAwakenings.length)];
+      setPreloadBars(3);
       chapterPreloadCog.classList.remove("hidden");
     },3000));
     chapterStageTimers.push(setTimeout(()=>{
-    chapterPreloadStatus.textContent="Declassifying";
-    setPreloadBars(5);
+      chapterPreloadStatus.textContent="Declassifying";
+      setPreloadBars(5);
       closeChapterPreload();
       openChapterPopup(title,targetEl?targetEl.innerHTML:"");
     },4000));
@@ -1090,6 +1245,49 @@ contentRoot.addEventListener("click",(e)=>{
   window.location.href=href;
 });
 
+contentRoot.addEventListener("click",(e)=>{
+  const ent=e.target.closest("a.entity-link");
+  if(!ent) return;
+  e.preventDefault();
+  const id=ent.dataset.entityId;
+  if(!id) return;
+  selectedEntityId=id;
+  setPageTab("database");
+  updateDatabasePanel();
+  const details=document.getElementById("dbDetails");
+  if(details) details.scrollIntoView({behavior:"smooth",block:"start"});
+});
+
+contentRoot.addEventListener("input",(e)=>{
+  const input=e.target.closest("#dbSearch");
+  if(!input) return;
+  dbSearch=input.value;
+  updateDatabasePanel();
+});
+contentRoot.addEventListener("click",(e)=>{
+  const item=e.target.closest(".db-item[data-entity-id]");
+  if(!item) return;
+  selectedEntityId=item.getAttribute("data-entity-id");
+  updateDatabasePanel();
+});
+contentRoot.addEventListener("submit",(e)=>{
+  const form=e.target.closest("#dbAddForm");
+  if(!form) return;
+  e.preventDefault();
+  const fd=new FormData(form);
+  const type=String(fd.get("type")||"").trim();
+  const name=String(fd.get("name")||"").trim();
+  const tags=String(fd.get("tags")||"").split(",").map(s=>s.trim()).filter(Boolean);
+  const description=String(fd.get("description")||"").trim();
+  if(!type || !name) return;
+  const id=`ent-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`;
+  state.entities.push({id,type,name,tags,description,fields:{},relations:[]});
+  saveState();
+  selectedEntityId=id;
+  form.reset();
+  updateDatabasePanel();
+});
+
 /* Drawer */
 const openBtn=document.getElementById("openDrawer");
 const closeBtn=document.getElementById("closeDrawer");
@@ -1113,6 +1311,46 @@ function scrollToPoi(){
   const target=document.getElementById("persons-of-interest");
   if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
 }
+
+/* Export / Import */
+const exportBtn=document.getElementById("exportArchive");
+const importBtn=document.getElementById("importArchive");
+const importFile=document.getElementById("importFile");
+if(exportBtn) exportBtn.addEventListener("click",()=>{
+  const payload=JSON.stringify(state,null,2);
+  const blob=new Blob([payload],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="noosphere-archive-backup.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(a.href);
+});
+if(importBtn) importBtn.addEventListener("click",()=>{ if(importFile) importFile.click(); });
+if(importFile) importFile.addEventListener("change",(e)=>{
+  const file=e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const parsed=JSON.parse(String(reader.result||""));
+      if(!parsed || !Array.isArray(parsed.chapters) || !Array.isArray(parsed.revisions) || !Array.isArray(parsed.persons) || !Array.isArray(parsed.entities)){
+        alert("Invalid archive JSON.");
+        return;
+      }
+      if(!confirm("Import will overwrite local archive. Proceed?")) return;
+      state={
+        chapters:parsed.chapters,
+        revisions:parsed.revisions,
+        persons:parsed.persons,
+        entities:parsed.entities
+      };
+      saveState();
+      renderAll();
+      alert("Import complete.");
+    }catch(err){ alert("Invalid JSON."); }
+  };
+  reader.readAsText(file);
+});
 chapterBadge.addEventListener("click",openChapterModal);
 badgeTooltip.addEventListener("click",(e)=>{e.stopPropagation(); scrollToPoi();});
 closeChapterModal.addEventListener("click",closeChapterModalFn);
@@ -1538,6 +1776,7 @@ function setPageTab(name){
   tabChrono.classList.toggle("active",name==="chrono");
   tabPoi.classList.toggle("active",name==="poi");
   tabDatabase.classList.toggle("active",name==="database");
+  if(name==="database") updateDatabasePanel();
 }
 tabProfile.addEventListener("click",()=>setPageTab("profile"));
 tabChrono.addEventListener("click",()=>setPageTab("chrono"));
