@@ -657,6 +657,7 @@
         <button class="page-tab active" id="tabProfile" data-tab="profile" type="button">Core Profile Node</button>
         <button class="page-tab" id="tabChrono" data-tab="chrono" type="button">Chronological Record</button>
         <button class="page-tab" id="tabPoi" data-tab="poi" type="button">POI Directory</button>
+        <button class="page-tab" id="tabDatabase" data-tab="database" type="button">Database</button>
       </div>
       <div id="contentRoot"></div>
       <p id="searchEmpty" class="search-empty hidden" role="status" aria-live="polite">No results found.</p>
@@ -876,9 +877,21 @@ function renderContent(){
   link.innerHTML=`<a class="poi-link" href="poi.html#persons-of-interest">Open POI Registry</a>`;
   poiPanel.appendChild(link);
 
+  const dbPanel=document.createElement("div");
+  dbPanel.className="tab-panel";
+  dbPanel.dataset.panel="database";
+  const h2c=document.createElement("h2");
+  h2c.textContent="Database";
+  dbPanel.appendChild(h2c);
+  const dbNote=document.createElement("p");
+  dbNote.className="classified";
+  dbNote.textContent="Database node awaiting data ingestion.";
+  dbPanel.appendChild(dbNote);
+
   tabs.appendChild(profilePanel);
   tabs.appendChild(chronoPanel);
   tabs.appendChild(poiPanel);
+  tabs.appendChild(dbPanel);
   contentRoot.appendChild(tabs);
   refreshBoxesCache();
 }
@@ -1516,6 +1529,7 @@ renderAll();
 const tabProfile=document.getElementById("tabProfile");
 const tabChrono=document.getElementById("tabChrono");
 const tabPoi=document.getElementById("tabPoi");
+const tabDatabase=document.getElementById("tabDatabase");
 function setPageTab(name){
   localStorage.setItem("varunActiveTab",name);
   const panels=Array.from(document.querySelectorAll(".tab-panel"));
@@ -1523,12 +1537,14 @@ function setPageTab(name){
   tabProfile.classList.toggle("active",name==="profile");
   tabChrono.classList.toggle("active",name==="chrono");
   tabPoi.classList.toggle("active",name==="poi");
+  tabDatabase.classList.toggle("active",name==="database");
 }
 tabProfile.addEventListener("click",()=>setPageTab("profile"));
 tabChrono.addEventListener("click",()=>setPageTab("chrono"));
 tabPoi.addEventListener("click",()=>setPageTab("poi"));
+tabDatabase.addEventListener("click",()=>setPageTab("database"));
 const savedTab=localStorage.getItem("varunActiveTab");
-if(savedTab && ["profile","chrono","poi"].includes(savedTab)) setPageTab(savedTab);
+if(savedTab && ["profile","chrono","poi","database"].includes(savedTab)) setPageTab(savedTab);
 
 /* Bezel Icons */
 const iconInquisition=document.getElementById("iconInquisition");
