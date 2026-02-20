@@ -149,6 +149,45 @@
     font-size:13px;
   }
   .chapter-modal p{margin:0;color:var(--muted);font-size:12px;}
+  .chapter-popup{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:44;display:none;align-items:center;justify-content:center;padding:18px;}
+  .chapter-popup.open{display:flex;}
+  .chapter-popup-panel{
+    width:min(520px,94vw);
+    background:rgba(12,16,20,.97);
+    border:1px solid var(--border);
+    border-radius:12px;
+    box-shadow:var(--shadow);
+    padding:16px;
+  }
+  .chapter-popup-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .chapter-popup-title{
+    font-family:Consolas,monospace;
+    letter-spacing:1.2px;
+    color:#cfe6d6;
+    text-shadow:0 1px 0 #000,0 0 6px rgba(31,143,58,.35);
+    font-size:12px;
+  }
+  .chapter-popup-body{display:flex;gap:12px;align-items:flex-start;}
+  .chapter-popup-avatar{
+    width:56px;
+    height:56px;
+    border-radius:8px;
+    border:1px solid #24303b;
+    object-fit:cover;
+    background:#0c1117;
+  }
+  .chapter-popup-content{
+    font-size:12px;
+    color:var(--text);
+  }
+  .chapter-popup-content h4{
+    margin:0 0 8px 0;
+    font-family:Consolas,monospace;
+    letter-spacing:1.2px;
+    color:#cfe6d6;
+    text-shadow:0 1px 0 #000,0 0 6px rgba(31,143,58,.35);
+    font-size:13px;
+  }
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:40;display:none;align-items:center;justify-content:center;padding:18px;}
   .modal.open{display:flex;}
   .panel{width:min(740px,96vw);background:rgba(18,22,27,.96);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;}
@@ -279,6 +318,22 @@
   </div>
 </div>
 
+<div class="chapter-popup" id="chapterPopup" role="dialog" aria-modal="true" aria-labelledby="chapterPopupTitle">
+  <div class="chapter-popup-panel">
+    <div class="chapter-popup-top">
+      <div class="chapter-popup-title">CHAPTER ENTRY</div>
+      <button class="iconbtn" id="closeChapterPopup" aria-label="Close chapter popup">✕</button>
+    </div>
+    <div class="chapter-popup-body">
+      <img class="chapter-popup-avatar" src="https://static.wikia.nocookie.net/warhammer40k/images/c/c1/Scribe_Servo-Skull.png/revision/latest/scale-to-width-down/250?cb=20141203211955" alt="Servo-skull avatar" />
+      <div class="chapter-popup-content">
+        <h4 id="chapterPopupTitle">CHAPTER</h4>
+        <div id="chapterPopupEntry"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const STORAGE_KEY="varunArchive.v1";
 const DEFAULT_CHAPTERS=[
@@ -397,9 +452,31 @@ function renderSidebars(){
 }
 
 function smoothScrollTo(id){const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:"smooth",block:"start"});}
+
+const chapterPopup=document.getElementById("chapterPopup");
+const closeChapterPopup=document.getElementById("closeChapterPopup");
+const chapterPopupTitle=document.getElementById("chapterPopupTitle");
+const chapterPopupEntry=document.getElementById("chapterPopupEntry");
+function openChapterPopup(title,entryHtml){
+  chapterPopupTitle.textContent=title||"CHAPTER";
+  chapterPopupEntry.innerHTML=entryHtml||"<p class=\"classified\">No entry available.</p>";
+  chapterPopup.classList.add("open");
+}
+function closeChapterPopupFn(){chapterPopup.classList.remove("open");}
+closeChapterPopup.addEventListener("click",closeChapterPopupFn);
+
 document.addEventListener("click",(e)=>{
   const a=e.target.closest('a[data-target]'); if(!a) return;
-  e.preventDefault(); smoothScrollTo(a.getAttribute("data-target")); closeDrawer();
+  const targetId=a.getAttribute("data-target");
+  if(targetId){
+    const targetEl=document.getElementById(targetId);
+    const label=a.querySelector(".label");
+    const title=label?label.textContent.trim():"CHAPTER";
+    openChapterPopup(title,targetEl?targetEl.innerHTML:"");
+  }
+  e.preventDefault();
+  smoothScrollTo(targetId);
+  closeDrawer();
 });
 
 /* Drawer */
