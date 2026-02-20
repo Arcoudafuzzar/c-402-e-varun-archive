@@ -47,10 +47,12 @@
   .bezel .serial{opacity:.7;}
   .bezel-icons{display:flex;gap:8px;align-items:center;}
   .bezel-icon{
-    width:18px;height:18px;object-fit:contain;
+    width:26px;height:26px;object-fit:contain;
     filter:grayscale(1) brightness(.85) drop-shadow(0 0 4px rgba(31,143,58,.4));
     opacity:.9;
+    cursor:pointer;
   }
+  .bezel-icon:hover{filter:grayscale(0) brightness(1) drop-shadow(0 0 6px rgba(31,143,58,.6));}
   .topbar-inner{display:flex;align-items:center;gap:12px;padding:14px 16px;max-width:1100px;margin:0 auto;}
   .brand{display:flex;flex-direction:column;gap:2px;min-width:200px;}
   .brand .title{font-weight:800;letter-spacing:1px;color:var(--accent);line-height:1.1;font-family:var(--royal);}
@@ -145,7 +147,8 @@
     100%{opacity:.7;}
   }
   .year{color:var(--blue);font-weight:bold;margin:0 0 8px 0;}
-  .classified{color:#888;font-style:italic;}
+  .classified{color:transparent;text-shadow:0 0 10px rgba(31,143,58,.35);font-style:italic;letter-spacing:.4px;}
+  body.classified-on .classified{color:#c7d0d9;text-shadow:none;}
   footer{margin-top:22px;font-size:12px;color:#555;border-top:1px solid #222;padding-top:15px;}
   .hidden{display:none!important;}
   mark{background:rgba(127,179,255,.22);color:var(--text);padding:0 2px;border-radius:4px;}
@@ -592,9 +595,9 @@
 <div class="bezel" aria-hidden="true">
   <div class="serial">NOOSPHERE // DS-41A</div>
   <div class="bezel-icons">
-    <img class="bezel-icon" src="https://www.vhv.rs/dpng/d/520-5200212_warhammer-k-png-grey-knights-warhammer-40k-inquisition.png" alt="" />
-    <img class="bezel-icon" src="https://static.wikitide.net/1d6chanwiki/f/fb/Symbol_Ordo_Reductor.png?20240304024537" alt="" />
-    <img class="bezel-icon" src="admech_popup_icon.png" alt="" />
+    <img class="bezel-icon" id="iconInquisition" src="https://www.vhv.rs/dpng/d/520-5200212_warhammer-k-png-grey-knights-warhammer-40k-inquisition.png" alt="Inquisition" title="Inquisition Clearance" />
+    <img class="bezel-icon" id="iconOrdo" src="https://static.wikitide.net/1d6chanwiki/f/fb/Symbol_Ordo_Reductor.png?20240304024537" alt="Ordo Reductor" title="Ordo Reductor" />
+    <img class="bezel-icon" id="iconAdmech" src="admech_popup_icon.png" alt="Adeptus Mechanicus" title="Adeptus Mechanicus" />
   </div>
 </div>
 
@@ -1530,6 +1533,26 @@ tabChrono.addEventListener("click",()=>setPageTab("chrono"));
 tabPoi.addEventListener("click",()=>setPageTab("poi"));
 const savedTab=localStorage.getItem("varunActiveTab");
 if(savedTab && ["profile","chrono","poi"].includes(savedTab)) setPageTab(savedTab);
+
+/* Bezel Icons */
+const iconInquisition=document.getElementById("iconInquisition");
+const CLASSIFIED_KEY="varunClassified.v1";
+function setClassified(on){
+  document.body.classList.toggle("classified-on",on);
+  localStorage.setItem(CLASSIFIED_KEY,on?"1":"0");
+}
+setClassified(localStorage.getItem(CLASSIFIED_KEY)==="1");
+iconInquisition.addEventListener("click",()=>{
+  const pass=prompt("Inquisition Clearance Required. Enter code:");
+  if(pass===null) return;
+  if(pass.trim()==="MAGENTA-7"){
+    setClassified(true);
+    alert("Clearance accepted. Classified entries revealed.");
+  } else {
+    setClassified(false);
+    alert("Access denied.");
+  }
+});
 
 /* Timeline */
 const timelineCogs=document.getElementById("timelineCogs");
