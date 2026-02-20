@@ -6,7 +6,7 @@
 <title>Noosphere Archive: Magos C-402 Epsilon Varun</title>
 <link rel="icon" type="image/x-icon" href="favicon.ico" />
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
   :root{
     --bg:#0b0d0f; --panel:#12161b; --panel2:#0f141a;
     --text:#c7d0d9; --muted:#7a8694;
@@ -17,7 +17,7 @@
     --danger:#c84a4a; --warning:#d1a93a;
   }
   *{box-sizing:border-box;} html,body{height:100%;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:Consolas,monospace;overflow-x:hidden;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"IBM Plex Mono",Consolas,monospace;overflow-x:hidden;}
   #noosphere{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;opacity:.32;pointer-events:none;}
   .vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:
     radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,.55) 100%),
@@ -59,7 +59,31 @@
   h1,h2,h3{color:var(--accent);border-bottom:1px solid #333;padding-bottom:5px;margin:0 0 12px 0;font-family:var(--royal);}
   h1{font-size:22px;letter-spacing:1px;} h2{font-size:16px;margin-top:14px;}
   .archive-box{background:rgba(18,22,27,.82);padding:20px;margin-bottom:16px;border-left:4px solid var(--accent);
-    border-radius:var(--radius);box-shadow:var(--shadow);position:relative;scroll-margin-top:86px;}
+    border-radius:var(--radius);box-shadow:var(--shadow);position:relative;scroll-margin-top:86px;overflow:hidden;}
+  .archive-box::before{
+    content:"";
+    position:absolute;
+    top:0;left:0;right:0;height:22px;
+    background:linear-gradient(180deg, rgba(9,14,12,.85), rgba(9,14,12,.45));
+    border-bottom:1px solid rgba(31,143,58,.22);
+    pointer-events:none;
+  }
+  .archive-box::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        rgba(140,255,190,.035),
+        rgba(140,255,190,.035) 1px,
+        rgba(0,0,0,0) 1px,
+        rgba(0,0,0,0) 3px
+      );
+    opacity:.35;
+    mix-blend-mode:screen;
+    pointer-events:none;
+  }
   .year{color:var(--blue);font-weight:bold;margin:0 0 8px 0;}
   .classified{color:#888;font-style:italic;}
   footer{margin-top:22px;font-size:12px;color:#555;border-top:1px solid #222;padding-top:15px;}
