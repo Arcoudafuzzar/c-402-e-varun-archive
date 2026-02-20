@@ -241,6 +241,42 @@
     mix-blend-mode:screen;
     pointer-events:none;
   }
+  .chapter-preload{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:46;display:none;align-items:center;justify-content:center;padding:18px;}
+  .chapter-preload.open{display:flex;}
+  .chapter-preload-panel{
+    width:min(420px,92vw);
+    background:rgba(7,13,9,.98);
+    border:1px solid rgba(31,143,58,.55);
+    border-radius:12px;
+    box-shadow:var(--shadow);
+    padding:16px;
+  }
+  .chapter-preload-title{
+    font-family:Consolas,monospace;
+    letter-spacing:1.2px;
+    color:#d7ffe2;
+    text-shadow:0 1px 0 #000,0 0 10px rgba(31,143,58,.6);
+    font-size:12px;
+    margin:0 0 10px 0;
+  }
+  .chapter-preload-row{display:flex;align-items:center;gap:10px;}
+  .chapter-preload-status{
+    font-family:Consolas,monospace;
+    color:#c7f0d0;
+    letter-spacing:1px;
+    font-size:12px;
+  }
+  .cog{
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    border:2px solid rgba(31,143,58,.7);
+    border-top-color:rgba(31,143,58,.15);
+    border-right-color:rgba(31,143,58,.35);
+    animation:spinCog 1s linear infinite;
+  }
+  .cog.hidden{display:none;}
+  @keyframes spinCog{to{transform:rotate(360deg);}}
   @keyframes staticScan{
     0%{transform:translateY(-6px);}
     100%{transform:translateY(6px);}
@@ -393,6 +429,16 @@
   </div>
 </div>
 
+<div class="chapter-preload" id="chapterPreload" role="dialog" aria-modal="true" aria-labelledby="chapterPreloadTitle">
+  <div class="chapter-preload-panel">
+    <div class="chapter-preload-title" id="chapterPreloadTitle">SYSTEM CHECK</div>
+    <div class="chapter-preload-row">
+      <div class="cog hidden" id="chapterPreloadCog" aria-hidden="true"></div>
+      <div class="chapter-preload-status" id="chapterPreloadStatus">Recognizing Eye Retina</div>
+    </div>
+  </div>
+</div>
+
 <script>
 const STORAGE_KEY="varunArchive.v1";
 const DEFAULT_CHAPTERS=[
@@ -516,9 +562,13 @@ const chapterPopup=document.getElementById("chapterPopup");
 const closeChapterPopup=document.getElementById("closeChapterPopup");
 const chapterPopupTitle=document.getElementById("chapterPopupTitle");
 const chapterPopupEntry=document.getElementById("chapterPopupEntry");
+const chapterPreload=document.getElementById("chapterPreload");
+const chapterPreloadStatus=document.getElementById("chapterPreloadStatus");
+const chapterPreloadCog=document.getElementById("chapterPreloadCog");
 let chapterPopupTimer=null;
 let chapterPopupWords=[];
 let chapterPopupIndex=0;
+let chapterStageTimers=[];
 function openChapterPopup(title,entryHtml){
   chapterPopupTitle.textContent=title||"CHAPTER";
   const plain=String(entryHtml||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
@@ -528,20 +578,37 @@ function openChapterPopup(title,entryHtml){
   chapterPopupWords=text.split(" ");
   chapterPopupIndex=0;
   if(chapterPopupTimer) clearInterval(chapterPopupTimer);
-  chapterPopupTimer=setInterval(()=>{
-    if(chapterPopupIndex>=chapterPopupWords.length){
-      clearInterval(chapterPopupTimer);
-      chapterPopupTimer=null;
-      return;
-    }
-    const next=chapterPopupWords.slice(0,chapterPopupIndex+1).join(" ");
-    targetP.textContent=next;
-    chapterPopupIndex+=1;
-  },120);
+  const redacted=chapterPopupWords.map(w=>w.replace(/./g,"█")).join(" ");
+  targetP.textContent=redacted;
+  setTimeout(()=>{
+    chapterPopupTimer=setInterval(()=>{
+      if(chapterPopupIndex>=chapterPopupWords.length){
+        clearInterval(chapterPopupTimer);
+        chapterPopupTimer=null;
+        return;
+      }
+      const next=chapterPopupWords.slice(0,chapterPopupIndex+1).join(" ");
+      targetP.textContent=next;
+      chapterPopupIndex+=1;
+    },120);
+  },800);
   chapterPopup.classList.add("open");
 }
 function closeChapterPopupFn(){chapterPopup.classList.remove("open");}
 closeChapterPopup.addEventListener("click",closeChapterPopupFn);
+
+function clearChapterStageTimers(){
+  chapterStageTimers.forEach(t=>clearTimeout(t));
+  chapterStageTimers=[];
+}
+function openChapterPreload(){
+  chapterPreloadStatus.textContent="Recognizing Eye Retina";
+  chapterPreloadCog.classList.add("hidden");
+  chapterPreload.classList.add("open");
+}
+function closeChapterPreload(){
+  chapterPreload.classList.remove("open");
+}
 
 document.addEventListener("click",(e)=>{
   const a=e.target.closest('a[data-target]'); if(!a) return;
@@ -550,7 +617,17 @@ document.addEventListener("click",(e)=>{
     const targetEl=document.getElementById(targetId);
     const label=a.querySelector(".label");
     const title=label?label.textContent.trim():"CHAPTER";
-    openChapterPopup(title,targetEl?targetEl.innerHTML:"");
+    clearChapterStageTimers();
+    openChapterPreload();
+    chapterStageTimers.push(setTimeout(()=>{
+      chapterPreloadStatus.textContent="Loading";
+      chapterPreloadCog.classList.remove("hidden");
+    },3000));
+    chapterStageTimers.push(setTimeout(()=>{
+      chapterPreloadStatus.textContent="Declassifying";
+      closeChapterPreload();
+      openChapterPopup(title,targetEl?targetEl.innerHTML:"");
+    },4000));
   }
   e.preventDefault();
   smoothScrollTo(targetId);
