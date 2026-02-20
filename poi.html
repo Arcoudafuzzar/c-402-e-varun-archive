@@ -269,7 +269,7 @@ document.body.appendChild(poiPreview);
 const poiPreviewImg=document.getElementById("poiPreviewImg");
 const poiPreviewCaption=document.getElementById("poiPreviewCaption");
 let activePoiCard=null;
-poiPreviewImg.addEventListener("error",()=>{poiPreview.classList.remove("open");});
+let activePoiSrc="";
 
 function escapeHtml(s){
   return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -329,6 +329,11 @@ function renderPersonsBox(){
           <input id="poiAffiliation" name="affiliation" type="text" maxlength="120" />
           <label for="poiImage">Image URL</label>
           <input id="poiImage" name="image" type="text" maxlength="2048" placeholder="https://example.com/character.jpg" />
+          <div class="note" style="margin-top:6px;">
+            Tips: Use a direct image URL ending in .png/.jpg/.webp. Some hosts block hotlinking.
+            If a link fails, re-upload to Imgur/Postimages/ImgBB/Catbox and copy the direct image address
+            (example: https://i.imgur.com/QlHE9bb.png).
+          </div>
           <label for="poiNotes">Notes</label>
           <textarea id="poiNotes" name="notes" maxlength="1200"></textarea>
           <div class="row" style="margin-top:10px;">
@@ -426,12 +431,24 @@ function movePoiPreview(x,y){
 contentRoot.addEventListener("mouseover",(e)=>{
   const card=e.target.closest(".poi-card[data-person-image]");
   if(!card || !contentRoot.contains(card)) return;
-  const image=card.getAttribute("data-person-image");
+  const image=String(card.getAttribute("data-person-image")||"").trim();
   if(!image) return;
   activePoiCard=card;
-  poiPreviewImg.src=image;
+  if(activePoiSrc!==image){
+    activePoiSrc=image;
+    poiPreviewImg.src=image;
+  }
   poiPreviewCaption.textContent=card.getAttribute("data-person-name")||"Unknown";
-  poiPreview.classList.add("open");
+  if(poiPreviewImg.complete && poiPreviewImg.naturalWidth>0){
+    poiPreview.classList.add("open");
+  } else {
+    poiPreviewImg.onload=()=>{
+      if(activePoiCard===card) poiPreview.classList.add("open");
+    };
+    poiPreviewImg.onerror=()=>{
+      if(activePoiCard===card) poiPreview.classList.remove("open");
+    };
+  }
   movePoiPreview(e.clientX,e.clientY);
 });
 contentRoot.addEventListener("mousemove",(e)=>{
