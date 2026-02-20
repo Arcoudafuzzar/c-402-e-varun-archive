@@ -187,12 +187,6 @@
   </div>
   <div style="height:12px;"></div>
   <div class="chapters" id="chaptersDrawer"></div>
-  <div class="chapters" style="margin-top:8px;">
-    <a href="#" id="openPoiModalDrawer">
-      <span class="tag">NEW</span>
-      <span class="label">Create POI</span>
-    </a>
-  </div>
   <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
 </aside>
 
@@ -228,18 +222,15 @@
       </div>
       <h3>ON THIS PAGE</h3>
       <div class="chapters" id="chaptersSidebar"></div>
-      <div class="chapters" style="margin-top:8px;">
-        <a href="#" id="openPoiModalSidebar">
-          <span class="tag">NEW</span>
-          <span class="label">Create POI</span>
-        </a>
-      </div>
       <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
     </aside>
 
     <main>
       <h1>NOOSPHERE ARCHIVE</h1>
-      <h2>Persons of Interest Registry</h2>
+      <div class="row" style="justify-content:space-between;align-items:center;">
+        <h2 style="margin:0;">Persons of Interest Registry</h2>
+        <button class="btn primary" id="openPoiModalTop" type="button">Create POI</button>
+      </div>
       <div id="contentRoot"></div>
       <p id="searchEmpty" class="search-empty hidden" role="status" aria-live="polite">No results found.</p>
       <footer>Data Integrity Verified.<br/>Access Level: Magenta-7 or Higher.<br/>Unauthorized replication punishable under Martian Code.</footer>
@@ -386,6 +377,7 @@ function renderPersonsBox(){
   for(const p of people){
     const entry=document.createElement("div");
     entry.className="archive-box poi-card";
+    if(p.id) entry.id=`poi-${p.id}`;
     entry.dataset.personId=p.id||"";
     entry.dataset.personImage=p.image||"";
     entry.dataset.personName=p.name||"Unknown";
@@ -415,6 +407,15 @@ function renderContent(){
 function getSidebarChapters(){
   const out=[];
   out.push({id:"persons-of-interest",tag:"POI",label:"Persons of Interest"});
+  const people=structuredClone(state.persons||[]).sort((a,b)=>{
+    const an=String(a.name||"").toLowerCase();
+    const bn=String(b.name||"").toLowerCase();
+    return an.localeCompare(bn);
+  });
+  for(const p of people){
+    if(!p.id) continue;
+    out.push({id:`poi-${p.id}`,tag:"•",label:p.name||"Unknown"});
+  }
   return out;
 }
 
@@ -535,16 +536,14 @@ backdrop.addEventListener("click",closeDrawer);
 /* POI Modal */
 const poiModal=document.getElementById("poiModal");
 const closePoiModal=document.getElementById("closePoiModal");
-const openPoiModalSidebar=document.getElementById("openPoiModalSidebar");
-const openPoiModalDrawer=document.getElementById("openPoiModalDrawer");
+const openPoiModalTop=document.getElementById("openPoiModalTop");
 function openPoiModalFn(){
   poiModal.classList.add("open");
   const nameInput=document.getElementById("poiName");
   if(nameInput) nameInput.focus();
 }
 function closePoiModalFn(){poiModal.classList.remove("open");}
-openPoiModalSidebar.addEventListener("click",(e)=>{e.preventDefault(); openPoiModalFn();});
-openPoiModalDrawer.addEventListener("click",(e)=>{e.preventDefault(); openPoiModalFn(); closeDrawer();});
+openPoiModalTop.addEventListener("click",(e)=>{e.preventDefault(); openPoiModalFn();});
 closePoiModal.addEventListener("click",closePoiModalFn);
 poiModal.addEventListener("click",(e)=>{if(e.target===poiModal) closePoiModalFn();});
 
