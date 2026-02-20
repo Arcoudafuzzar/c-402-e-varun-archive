@@ -106,6 +106,30 @@
   .item .meta .id{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:440px;}
   .item .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
   .note{font-size:11px;color:var(--muted);line-height:1.4;}
+  .poi-entry{display:flex;gap:12px;align-items:flex-start;}
+  .poi-entry img{
+    width:110px;
+    height:110px;
+    border-radius:10px;
+    object-fit:cover;
+    border:1px solid #24303b;
+    background:#0c1117;
+    flex:0 0 110px;
+  }
+  .poi-entry h3{
+    margin:0 0 6px 0;
+    font-size:14px;
+    letter-spacing:.8px;
+    color:#cfe6d6;
+    border:none;
+    font-family:var(--royal);
+  }
+  .poi-affiliation{color:#7fb3ff;font-weight:700;margin-left:8px;font-size:12px;}
+  .poi-actions{margin-top:10px;}
+  .poi-modal{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:40;display:none;align-items:center;justify-content:center;padding:18px;}
+  .poi-modal.open{display:flex;}
+  .poi-panel{width:min(520px,94vw);background:rgba(18,22,27,.96);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;}
+  .poi-panel-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
   .poi-preview{
     position:fixed;
     z-index:35;
@@ -163,6 +187,12 @@
   </div>
   <div style="height:12px;"></div>
   <div class="chapters" id="chaptersDrawer"></div>
+  <div class="chapters" style="margin-top:8px;">
+    <a href="#" id="openPoiModalDrawer">
+      <span class="tag">NEW</span>
+      <span class="label">Create POI</span>
+    </a>
+  </div>
   <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
 </aside>
 
@@ -198,6 +228,12 @@
       </div>
       <h3>ON THIS PAGE</h3>
       <div class="chapters" id="chaptersSidebar"></div>
+      <div class="chapters" style="margin-top:8px;">
+        <a href="#" id="openPoiModalSidebar">
+          <span class="tag">NEW</span>
+          <span class="label">Create POI</span>
+        </a>
+      </div>
       <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
     </aside>
 
@@ -208,6 +244,33 @@
       <p id="searchEmpty" class="search-empty hidden" role="status" aria-live="polite">No results found.</p>
       <footer>Data Integrity Verified.<br/>Access Level: Magenta-7 or Higher.<br/>Unauthorized replication punishable under Martian Code.</footer>
     </main>
+  </div>
+</div>
+
+<div class="poi-modal" id="poiModal" role="dialog" aria-modal="true" aria-labelledby="poiModalTitle">
+  <div class="poi-panel">
+    <div class="poi-panel-top">
+      <h3 id="poiModalTitle">Add Person of Interest</h3>
+      <button class="iconbtn" id="closePoiModal" aria-label="Close POI form">✕</button>
+    </div>
+    <form id="poiForm" class="field">
+      <label for="poiName">Name</label>
+      <input id="poiName" name="name" type="text" maxlength="120" required />
+      <label for="poiAffiliation">Affiliation</label>
+      <input id="poiAffiliation" name="affiliation" type="text" maxlength="120" />
+      <label for="poiImage">Image URL</label>
+      <input id="poiImage" name="image" type="text" maxlength="2048" placeholder="https://example.com/character.jpg" />
+      <div class="note" style="margin-top:6px;">
+        Tips: Use a direct image URL ending in .png/.jpg/.webp. Some hosts block hotlinking.
+        If a link fails, re-upload to Imgur/Postimages/ImgBB/Catbox and copy the direct image address
+        (example: https://i.imgur.com/QlHE9bb.png).
+      </div>
+      <label for="poiNotes">Notes</label>
+      <textarea id="poiNotes" name="notes" maxlength="1200"></textarea>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary" type="submit">Add Person</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -297,58 +360,50 @@ function renderRevisionBox(){
 }
 
 function renderPersonsBox(){
-  const div=document.createElement("div");
-  div.className="archive-box";
-  div.id="persons-of-interest";
-  div.dataset.kind="persons";
-  const listHtml=state.persons.map(p=>`
-    <div class="item poi-card" data-person-id="${escapeHtml(p.id||"")}" data-person-image="${escapeHtml(p.image||"")}" data-person-name="${escapeHtml(p.name||"Unknown")}">
-      <div class="meta">
-        <div class="t">
-          <span class="pill">POI</span>
-          <div class="label">${escapeHtml(p.name||"Unknown")}</div>
-        </div>
-        <div class="id">${escapeHtml(p.affiliation||"Unaligned")}</div>
-        <div class="note">${escapeHtml(p.notes||"No notes.")}</div>
-      </div>
-      <div class="actions">
-        <button class="btn danger" type="button" data-act="delete-poi" data-id="${escapeHtml(p.id||"")}">Delete</button>
-      </div>
-    </div>`).join("");
+  const container=document.createElement("div");
+  container.id="persons-of-interest";
+  container.dataset.kind="persons";
 
-  div.innerHTML=`
-    <p class="year">POI</p>
-    <p><strong>Persons of Interest</strong></p>
-    <div class="grid">
-      <section class="section" aria-label="Add person of interest">
-        <h4>Add Character</h4>
-        <form id="poiForm" class="field">
-          <label for="poiName">Name</label>
-          <input id="poiName" name="name" type="text" maxlength="120" required />
-          <label for="poiAffiliation">Affiliation</label>
-          <input id="poiAffiliation" name="affiliation" type="text" maxlength="120" />
-          <label for="poiImage">Image URL</label>
-          <input id="poiImage" name="image" type="text" maxlength="2048" placeholder="https://example.com/character.jpg" />
-          <div class="note" style="margin-top:6px;">
-            Tips: Use a direct image URL ending in .png/.jpg/.webp. Some hosts block hotlinking.
-            If a link fails, re-upload to Imgur/Postimages/ImgBB/Catbox and copy the direct image address
-            (example: https://i.imgur.com/QlHE9bb.png).
+  const header=document.createElement("div");
+  header.className="archive-box";
+  header.innerHTML=`<p class="year">POI</p><p><strong>Persons of Interest</strong></p>`;
+  container.appendChild(header);
+
+  const people=structuredClone(state.persons||[]).sort((a,b)=>{
+    const an=String(a.name||"").toLowerCase();
+    const bn=String(b.name||"").toLowerCase();
+    return an.localeCompare(bn);
+  });
+
+  if(!people.length){
+    const empty=document.createElement("div");
+    empty.className="archive-box";
+    empty.innerHTML=`<p class="classified">No persons recorded.</p>`;
+    container.appendChild(empty);
+    return container;
+  }
+
+  for(const p of people){
+    const entry=document.createElement("div");
+    entry.className="archive-box poi-card";
+    entry.dataset.personId=p.id||"";
+    entry.dataset.personImage=p.image||"";
+    entry.dataset.personName=p.name||"Unknown";
+    const imgHtml=p.image?`<img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name||"Unknown")}" />`:"";
+    entry.innerHTML=`
+      <div class="poi-entry">
+        ${imgHtml}
+        <div class="poi-entry-body">
+          <h3>${escapeHtml(p.name||"Unknown")}<span class="poi-affiliation">${escapeHtml(p.affiliation||"Unaligned")}</span></h3>
+          <div class="note">${escapeHtml(p.notes||"No notes.")}</div>
+          <div class="poi-actions">
+            <button class="btn danger" type="button" data-act="delete-poi" data-id="${escapeHtml(p.id||"")}">Delete</button>
           </div>
-          <label for="poiNotes">Notes</label>
-          <textarea id="poiNotes" name="notes" maxlength="1200"></textarea>
-          <div class="row" style="margin-top:10px;">
-            <button class="btn primary" type="submit">Add Person</button>
-          </div>
-        </form>
-      </section>
-      <section class="section" aria-label="Persons of interest list">
-        <h4>Tracked Individuals</h4>
-        <div class="list" id="poiList">
-          ${listHtml || `<p class="note">No persons recorded.</p>`}
         </div>
-      </section>
-    </div>`;
-  return div;
+      </div>`;
+    container.appendChild(entry);
+  }
+  return container;
 }
 
 function renderContent(){
@@ -380,7 +435,7 @@ document.addEventListener("click",(e)=>{
   e.preventDefault(); smoothScrollTo(a.getAttribute("data-target")); closeDrawer();
 });
 
-contentRoot.addEventListener("submit",(e)=>{
+document.addEventListener("submit",(e)=>{
   const form=e.target.closest("#poiForm");
   if(!form) return;
   e.preventDefault();
@@ -402,6 +457,8 @@ contentRoot.addEventListener("submit",(e)=>{
     notes:notes||"No notes."
   });
   saveState();
+  form.reset();
+  closePoiModalFn();
   renderAll();
   smoothScrollTo("persons-of-interest");
 });
@@ -474,6 +531,22 @@ function closeDrawer(){document.body.classList.remove("drawer-open");}
 openBtn.addEventListener("click",openDrawer);
 closeBtn.addEventListener("click",closeDrawer);
 backdrop.addEventListener("click",closeDrawer);
+
+/* POI Modal */
+const poiModal=document.getElementById("poiModal");
+const closePoiModal=document.getElementById("closePoiModal");
+const openPoiModalSidebar=document.getElementById("openPoiModalSidebar");
+const openPoiModalDrawer=document.getElementById("openPoiModalDrawer");
+function openPoiModalFn(){
+  poiModal.classList.add("open");
+  const nameInput=document.getElementById("poiName");
+  if(nameInput) nameInput.focus();
+}
+function closePoiModalFn(){poiModal.classList.remove("open");}
+openPoiModalSidebar.addEventListener("click",(e)=>{e.preventDefault(); openPoiModalFn();});
+openPoiModalDrawer.addEventListener("click",(e)=>{e.preventDefault(); openPoiModalFn(); closeDrawer();});
+closePoiModal.addEventListener("click",closePoiModalFn);
+poiModal.addEventListener("click",(e)=>{if(e.target===poiModal) closePoiModalFn();});
 
 /* Search (restore original each input) */
 const input=document.getElementById("searchInput");
