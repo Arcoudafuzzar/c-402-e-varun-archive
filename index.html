@@ -580,18 +580,20 @@ function openChapterPopup(title,entryHtml){
   if(chapterPopupTimer) clearInterval(chapterPopupTimer);
   const redacted=chapterPopupWords.map(w=>w.replace(/./g,"█")).join(" ");
   targetP.textContent=redacted;
-  setTimeout(()=>{
-    chapterPopupTimer=setInterval(()=>{
-      if(chapterPopupIndex>=chapterPopupWords.length){
-        clearInterval(chapterPopupTimer);
-        chapterPopupTimer=null;
-        return;
-      }
-      const next=chapterPopupWords.slice(0,chapterPopupIndex+1).join(" ");
-      targetP.textContent=next;
-      chapterPopupIndex+=1;
-    },120);
-  },800);
+  chapterPopupTimer=setInterval(()=>{
+    if(chapterPopupIndex>=chapterPopupWords.length){
+      clearInterval(chapterPopupTimer);
+      chapterPopupTimer=null;
+      return;
+    }
+    const revealed=chapterPopupWords.slice(0,chapterPopupIndex+1).join(" ");
+    const remaining=chapterPopupWords
+      .slice(chapterPopupIndex+1)
+      .map(w=>w.replace(/./g,"█"))
+      .join(" ");
+    targetP.textContent=remaining ? `${revealed} ${remaining}` : revealed;
+    chapterPopupIndex+=1;
+  },120);
   chapterPopup.classList.add("open");
 }
 function closeChapterPopupFn(){chapterPopup.classList.remove("open");}
