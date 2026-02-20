@@ -619,7 +619,6 @@
     </a>
   </div>
   <div style="height:12px;"></div>
-  <div class="chapters" id="chaptersDrawer"></div>
   <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
 </aside>
 
@@ -653,8 +652,6 @@
           <span class="label">Persons of Interest</span>
         </a>
       </div>
-      <h3>CHAPTER LIST</h3>
-      <div class="chapters" id="chaptersSidebar"></div>
       <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
     </aside>
 
@@ -782,8 +779,6 @@ function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
 let state=loadState();
 
 const contentRoot=document.getElementById("contentRoot");
-const chaptersSidebar=document.getElementById("chaptersSidebar");
-const chaptersDrawer=document.getElementById("chaptersDrawer");
 function escapeHtml(s){
   return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
@@ -918,30 +913,7 @@ function ensureProfileText(ch){
 <p><strong>Unknown Lore Addendum:</strong> Cross‑reference “Annals of K‑Tor // Basilikon Echo”, datum‑lock pending (Redactor‑Magi: 3). Observed variance in Ossuary‑Sigil 44‑Kappa, hypothesis logged for later exegesis.</p>`;
 }
 
-function getSidebarChapters(){
-  const out=[];
-  const profile=state.chapters.find(c=>c.id==="profile");
-  if(profile) out.push({id:profile.id,tag:profile.tag||"CORE",label:profile.label||"Profile"});
-  for(const ch of state.chapters){
-    if(ch.id==="profile") continue;
-    out.push({id:ch.id,tag:ch.tag||"—",label:ch.label||ch.id});
-  }
-  return out;
-}
-
-function renderSidebars(){
-  const links=getSidebarChapters();
-  const html=links.map(c=>`
-    <a href="#${c.id}" data-target="${c.id}">
-      <span class="tag">${escapeHtml(c.tag)}</span>
-      <span class="label">${escapeHtml(c.label)}</span>
-    </a>`).join("");
-  chaptersSidebar.innerHTML=html;
-  chaptersDrawer.innerHTML=html;
-}
-
-function smoothScrollTo(id){const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:"smooth",block:"start"});}
-
+function renderSidebars(){}\n
 const chapterPopup=document.getElementById("chapterPopup");
 const closeChapterPopup=document.getElementById("closeChapterPopup");
 const chapterPopupHeader=document.getElementById("chapterPopupHeader");
@@ -1638,6 +1610,7 @@ window.addEventListener("resize",updateTimeline);
 </script>
 </body>
 </html>
+
 
 
 
