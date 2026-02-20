@@ -586,7 +586,7 @@ function ensureVarunLink(ch){
   if(body.includes("class=\"poi-link\"")) return;
   const linked=body.replace(
     /Magos Varun/,
-    "<a class=\"poi-link\" href=\"#persons-of-interest\" data-poi=\"varun\">Magos Varun<span class=\"poi-tooltip\" aria-hidden=\"true\"></span></a>"
+    "<a class=\"poi-link\" href=\"poi.html#persons-of-interest\" data-poi=\"varun\">Magos Varun<span class=\"poi-tooltip\" aria-hidden=\"true\"></span></a>"
   );
   ch.body=linked;
 }
@@ -697,10 +697,11 @@ document.addEventListener("click",(e)=>{
 contentRoot.addEventListener("click",(e)=>{
   const link=e.target.closest("a.poi-link");
   if(!link) return;
-  if(link.getAttribute("href")!=="#persons-of-interest") return;
+  const href=link.getAttribute("href")||"";
+  if(!href.includes("poi.html")) return;
   e.preventDefault();
   e.stopPropagation();
-  smoothScrollTo("persons-of-interest");
+  window.location.href=href;
 });
 
 /* Drawer */
