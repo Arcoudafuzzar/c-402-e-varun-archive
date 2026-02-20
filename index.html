@@ -72,6 +72,7 @@
     text-shadow:0 0 8px rgba(31,143,58,.35);
     position:relative;
     white-space:nowrap;
+    cursor:pointer;
   }
   .poi-link:hover{
     color:#c7ffd8;
@@ -572,10 +573,22 @@ function renderContent(){
 
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
+    ensureVarunLink(ch);
     contentRoot.appendChild(makeBox(ch));
   }
   contentRoot.appendChild(renderRevisionBox());
   refreshBoxesCache();
+}
+
+function ensureVarunLink(ch){
+  if(!ch || ch.id!=="y-current") return;
+  const body=String(ch.body||"");
+  if(body.includes("class=\"poi-link\"")) return;
+  const linked=body.replace(
+    /Magos Varun/,
+    "<a class=\"poi-link\" href=\"#persons-of-interest\" data-poi=\"varun\">Magos Varun<span class=\"poi-tooltip\" aria-hidden=\"true\"></span></a>"
+  );
+  ch.body=linked;
 }
 
 function getSidebarChapters(){
@@ -681,11 +694,12 @@ document.addEventListener("click",(e)=>{
   closeDrawer();
 });
 
-document.addEventListener("click",(e)=>{
+contentRoot.addEventListener("click",(e)=>{
   const link=e.target.closest("a.poi-link");
   if(!link) return;
   if(link.getAttribute("href")!=="#persons-of-interest") return;
   e.preventDefault();
+  e.stopPropagation();
   smoothScrollTo("persons-of-interest");
 });
 
