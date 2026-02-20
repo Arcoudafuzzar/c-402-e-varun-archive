@@ -135,6 +135,22 @@
     overflow:hidden;
     text-overflow:ellipsis;
   }
+  .quick-export{
+    position:fixed;
+    right:14px;
+    bottom:14px;
+    z-index:30;
+    border:1px solid #2b3642;
+    background:rgba(18,22,27,.92);
+    color:var(--text);
+    border-radius:10px;
+    padding:9px 12px;
+    font-family:var(--royal);
+    font-size:12px;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+  }
+  .quick-export:hover{border-color:#3a4a5a;}
   @media (max-width:980px){.sidebar{display:none;}.layout{padding-top:14px;}.search{width:52vw;min-width:180px;}}
   @media (max-width:560px){.brand{min-width:0;}.brand .subtitle{display:none;}.search{width:56vw;}body{font-size:14px;}}
 </style>
@@ -187,6 +203,7 @@
     </main>
   </div>
 </div>
+<button id="quickExportBtn" class="quick-export" type="button" aria-label="Export archive JSON">Export JSON</button>
 
 <script>
 const STORAGE_KEY="varunArchive.v1";
@@ -239,6 +256,7 @@ let state=loadState();
 const contentRoot=document.getElementById("contentRoot");
 const chaptersSidebar=document.getElementById("chaptersSidebar");
 const chaptersDrawer=document.getElementById("chaptersDrawer");
+const quickExportBtn=document.getElementById("quickExportBtn");
 const poiPreview=document.createElement("div");
 poiPreview.className="poi-preview";
 poiPreview.innerHTML='<img id="poiPreviewImg" alt="Character preview" /><div class="caption" id="poiPreviewCaption"></div>';
@@ -247,6 +265,17 @@ const poiPreviewImg=document.getElementById("poiPreviewImg");
 const poiPreviewCaption=document.getElementById("poiPreviewCaption");
 let activePoiCard=null;
 poiPreviewImg.addEventListener("error",()=>{poiPreview.classList.remove("open");});
+if(quickExportBtn){
+  quickExportBtn.addEventListener("click",()=>{
+    const payload=JSON.stringify(state,null,2);
+    const blob=new Blob([payload],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="varun-archive-backup.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(a.href);
+  });
+}
 
 function escapeHtml(s){
   return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
