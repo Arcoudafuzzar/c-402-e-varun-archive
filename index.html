@@ -659,7 +659,8 @@
       <h1>NOOSPHERE ARCHIVE</h1>
       <h2>Magos C-402 Epsilon Varun</h2>
       <div class="page-tabs" role="tablist">
-        <button class="page-tab active" id="tabChrono" data-tab="chrono" type="button">Chronological Record</button>
+        <button class="page-tab active" id="tabProfile" data-tab="profile" type="button">Core Profile Node</button>
+        <button class="page-tab" id="tabChrono" data-tab="chrono" type="button">Chronological Record</button>
         <button class="page-tab" id="tabPoi" data-tab="poi" type="button">POI Directory</button>
       </div>
       <div id="contentRoot"></div>
@@ -831,13 +832,16 @@ function renderRevisionBox(){
 function renderContent(){
   contentRoot.innerHTML="";
   const profile=state.chapters.find(c=>c.id==="profile");
-  if(profile) contentRoot.appendChild(makeBox(profile));
-
   const tabs=document.createElement("div");
   tabs.className="tabs-root";
 
+  const profilePanel=document.createElement("div");
+  profilePanel.className="tab-panel active";
+  profilePanel.dataset.panel="profile";
+  if(profile) profilePanel.appendChild(makeBox(profile));
+
   const chronoPanel=document.createElement("div");
-  chronoPanel.className="tab-panel active";
+  chronoPanel.className="tab-panel";
   chronoPanel.dataset.panel="chrono";
   const h2=document.createElement("h2");
   h2.textContent="Chronological Expedition Record";
@@ -871,6 +875,7 @@ function renderContent(){
   link.innerHTML=`<a class="poi-link" href="poi.html#persons-of-interest">Open POI Registry</a>`;
   poiPanel.appendChild(link);
 
+  tabs.appendChild(profilePanel);
   tabs.appendChild(chronoPanel);
   tabs.appendChild(poiPanel);
   contentRoot.appendChild(tabs);
@@ -1487,16 +1492,22 @@ function renderAll(){renderContent(); renderSidebars(); refreshBoxesCache(); app
 renderAll();
 
 /* Page Tabs */
+const tabProfile=document.getElementById("tabProfile");
 const tabChrono=document.getElementById("tabChrono");
 const tabPoi=document.getElementById("tabPoi");
 function setPageTab(name){
+  localStorage.setItem("varunActiveTab",name);
   const panels=Array.from(document.querySelectorAll(".tab-panel"));
   panels.forEach(p=>p.classList.toggle("active",p.dataset.panel===name));
+  tabProfile.classList.toggle("active",name==="profile");
   tabChrono.classList.toggle("active",name==="chrono");
   tabPoi.classList.toggle("active",name==="poi");
 }
+tabProfile.addEventListener("click",()=>setPageTab("profile"));
 tabChrono.addEventListener("click",()=>setPageTab("chrono"));
 tabPoi.addEventListener("click",()=>setPageTab("poi"));
+const savedTab=localStorage.getItem("varunActiveTab");
+if(savedTab && ["profile","chrono","poi"].includes(savedTab)) setPageTab(savedTab);
 
 /* Timeline */
 const timelineCogs=document.getElementById("timelineCogs");
