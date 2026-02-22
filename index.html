@@ -637,6 +637,40 @@
   .item .meta .id{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:440px;}
   .item .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
   .note{font-size:11px;color:var(--muted);line-height:1.4;}
+  .seed-import-btn{
+    border:1px solid #2b3642;
+    background:rgba(18,22,27,.75);
+    color:var(--text);
+    border-radius:8px;
+    padding:6px 9px;
+    font-family:"IBM Plex Mono",Consolas,monospace;
+    font-size:10px;
+    letter-spacing:.6px;
+    cursor:pointer;
+  }
+  .seed-import-btn:hover{border-color:var(--accent-bright);color:#c7ffd8;}
+  .seed-tools{margin:8px 0 10px 0;display:flex;gap:8px;flex-wrap:wrap;}
+  .seed-toast{
+    position:fixed;
+    left:50%;
+    bottom:18px;
+    transform:translateX(-50%) translateY(12px);
+    z-index:60;
+    background:rgba(8,12,16,.95);
+    color:#cfe6d6;
+    border:1px solid #2b3642;
+    border-radius:10px;
+    padding:8px 12px;
+    font-size:12px;
+    box-shadow:var(--shadow);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .18s ease, transform .18s ease;
+  }
+  .seed-toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
   .docs-list{display:flex;flex-direction:column;gap:10px;}
   .doc-item{
     border:1px solid #24303b;
@@ -809,6 +843,7 @@
   </div>
 </div>
 <button id="quickExportBtn" class="quick-export" type="button" aria-label="Export archive JSON">Export JSON</button>
+<div id="seedToast" class="seed-toast" role="status" aria-live="polite"></div>
 
 <div class="timeline" id="timeline" aria-hidden="true">
   <div class="timeline-rail"></div>
@@ -1940,6 +1975,93 @@ Imperial School, Technical Academy, Imperial University, Imperial Hospital, Publ
 Οι υπογράφοντες: C-402 Epsilon Varun, Magos Biologis and Explorator of the Adeptus Mechanicus Veteran Artifex of the Ordo Reductor, Master of Medicae Arts and Xenobiology, Inquisitor’s Ally, Data-Savant, and Custodian of the Armorium.`
 };
 const CONSTITUTION_FULL_TEXT=(document.getElementById("constitution-full-text")?.textContent || "").trim();
+const SEED_TEXT=`=== PAGE 1 ===
+Name and Background:
+C-402 Epsilon Varun, Magos Biologis and Explorator of the Adeptus Mecehanicus. 
+Veteran Artifex of the Ordo Reductor, Master of Medicae Arts and Xenobiology. 
+Inquisitor's Ally, Data-Savant, and Custodian of the Armorium.
+
+PERSONAL RECORDS AND MEMOIRS OF C-402 EPSILON VARUN
+
+In Service to the Omnissiah: The Chronicles of C-402 Epsilon Varun
+
+I am C-402 Epsilon Varun, Magos Biologis and Explorator of the Adeptus Mecehanicus,
+Veteran Artifex of the Ordo Reductor, Master of Medicae Arts and Xenobiology, Inquisitor's
+Ally, Data-Savant, and Custodian of the Armorium. This is my chronice, a testament to my journey from the forges of Mars to the shadowed halls of the Inquisition.
+
+The Ascension of the Tech-Priest
+My initiation into the mysteries of the Omnissiah was rigorous, a path fraught with peril and enlightment.
+My first distinction came upon the forsaken world of Thalasson V, a planet shrouded in perpetual storms and ancient secrets. 
+It was here that I led an expedition into the depths of a forgotten Mechanicus outpost,lost to the annals of history.
+Our goal: to recover and STC fragment rumored to hold the secrets of advanced biogenetic augmentation.
+
+Descending into the abyssal depths, we faced relentless electro-storms and hostile xenos
+fauna. My cogitators whirred and clicked, Processing data at unfathomable speeds as I
+navigated the treacherous corridors. It was there, in the heart of the complex, that I
+encountered the ancient guardianâ€”a colossal construct of steel and wrath. Engaging in a
+battle of wits and ferocity, I outmaneuvered the guardian, disabling it with a precise EMP
+pulse.
+
+The STC fragment was secured, but not without cost. I sustained grievous injuries, and it
+was my mastery of the Medicae Arts that allowed me to stabilize my own condition,
+performing a self-surgery that would later be chronicled in the annals of the Mechanicus,
+This feat earned me the title of Artifex of the Ordo Reductor, a rare honor bestowed upon
+those who have achieved unparalleled feats of engineering and combat.
+
+
+=== PAGE 2 ===
+The Inquisitor's Call
+
+My second defining moment came under the auspices of Inquisitor Alaric Voss. Tasked
+with investigating the heretical cult of the Bleeding Cog, I was to infiltrate their ranks and
+dismantle their operations from within. It was a mission fraught with danger, for the cult
+was adept in the dark arts of forbidden technology. By my side was Lucas Rio, an
+interrogator of exceptional skill, whose silver tongue could turn the tide of any negotiation.
+
+Together, we delved into the underbelly of Hive Secundus. Lucas, with his effortless charm,
+infiltrated the cult's inner circle, gaining their trust while I posed as a rogue tech-priest
+seeking forbidden knowledge. The ruse was intricate, a dance of deception and subtlety.
+Lucas's words wove a tapestry of lies so convincing that even the most paranoid cultists
+were beguiled.
+
+As we neared the cult's sanctum, our true purpose became clear. We were to disable their
+warp-tainted generator, a device capable of summoning daemonic entities. The ritual was
+underway, and time was against us. In the ensuing chaos, Lucas's negotiations bought us
+precious seconds as I hacked into the generator's core. My mechadendrites worked with
+mechanical precision, severing conduits and rerouting power, culminating in a controlled
+detonation that eradicated the cult and their vile machine.
+
+This mission solidified my place in the Inquisitor's retinue. My adeptness at blending my
+quest for knowledge with unwavering loyalty to the Imperium marked me as an invaluable
+asset. The title of Data-Savant was bestowed upon me, acknowledging my insatiable thirst
+for knowledge, both sacred and forbidden.
+
+The Eternal Quest
+
+Now, as the Imperium faces its darkest hour in millennia, my purpose is clear. Each
+mission is a crucible, testing my resolve and ingenuity. The whispers of forbidden
+knowledge continue to tempt me, but my duty to the Omnissiah and the Imperium remains
+paramount. Every artifact recovered, every heretic purged, brings us one step closer to
+salvation.
+
+
+=== PAGE 3 ===
+Yet, in the quiet moments between missions, I allow myself to ponder the vast tapestry of
+the cosmos, ever seeking the hidden truths that lie beyond the veil. For knowledge is the
+purest form of power, and in its pursuit, I find the strength to endure and prevail.
+
+In the name of the Omnissiah and the Emperor, my journey continues.
+
+C-402 Epsilon Varun
+
+Magos Biologis and Explorator of the Adeptus Mechanicus
+
+Veteran Artifex of the Ordo Reductor
+
+Master of Medicae Arts and Xenobiology
+
+Inquisitor's Ally, Data-Savant, and Custodian of the
+Armorium`;
 function loadState(){
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
@@ -1964,6 +2086,219 @@ function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
 let state=loadState();
 let dbSearch="";
 let selectedEntityId=(state.entities && state.entities[0])?state.entities[0].id:null;
+let seedToastTimer=null;
+
+function normalizeKey(value){
+  return String(value||"")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+}
+function slugifySeed(value){
+  return normalizeKey(value).replace(/\s+/g,"-") || "seed";
+}
+function htmlTextLines(html){
+  const tmp=document.createElement("div");
+  tmp.innerHTML=String(html||"");
+  return String(tmp.textContent||"")
+    .split("\n")
+    .map(s=>s.trim())
+    .filter(Boolean);
+}
+function makeSeedChapterBody(title,body){
+  const paras=String(body||"")
+    .split(/\n{2,}/)
+    .map(s=>s.replace(/\s+/g," ").trim())
+    .filter(Boolean)
+    .map(s=>`<p>${escapeHtml(s)}</p>`)
+    .join("");
+  return `<p class="year">SEED</p><p><strong>${escapeHtml(title)}</strong></p>${paras || `<p class="classified">No details.</p>`}`;
+}
+function parseSeedText(text){
+  const src=String(text||"");
+  const lines=src.split("\n").map(l=>l.trim());
+  const wantedHeadings=["The Ascension of the Tech-Priest","The Inquisitor's Call","The Eternal Quest"];
+  const headingSet=new Set();
+  const headings=[];
+  for(const wanted of wantedHeadings){
+    if(src.includes(wanted)){
+      headingSet.add(wanted);
+      headings.push(wanted);
+    }
+  }
+  for(const line of lines){
+    if(!line) continue;
+    if(line.startsWith("===") || line.endsWith(":")) continue;
+    if(/^PERSONAL RECORDS/i.test(line)) continue;
+    if(/^In Service to the Omnissiah/i.test(line)) continue;
+    if(line.length<8 || line.length>80) continue;
+    if(!/^[A-Z][A-Za-z0-9' -]+$/.test(line)) continue;
+    if(!/[a-z]/.test(line)) continue;
+    if(headingSet.has(line)) continue;
+    headingSet.add(line);
+    headings.push(line);
+  }
+
+  const chapters=[];
+  const splitRegex=new RegExp(`\\n(${headings.map(h=>h.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|")})\\n`,"g");
+  const tokens=src.split(splitRegex);
+  for(let i=1;i<tokens.length;i+=2){
+    const title=tokens[i]?.trim();
+    const body=(tokens[i+1]||"").replace(/=== PAGE \d+ ===/g,"").trim();
+    if(!title) continue;
+    chapters.push({title,body});
+  }
+  if(!chapters.length){
+    for(const h of headings){
+      chapters.push({title:h,body:""});
+    }
+  }
+
+  const poiNames=["Inquisitor Alaric Voss","Lucas Rio","Bleeding Cog"];
+  const persons=[];
+  for(const name of poiNames){
+    if(src.toLowerCase().includes(name.toLowerCase())){
+      persons.push({
+        name,
+        affiliation:name==="Bleeding Cog"?"Heretical Cult":"Inquisition",
+        notes:name==="Bleeding Cog"
+          ?"Cult entity extracted from seed dossier."
+          :"Seed-extracted person of interest."
+      });
+    }
+  }
+
+  const places=["Thalasson V","Hive Secundus"].filter(p=>src.toLowerCase().includes(p.toLowerCase()));
+  const artifacts=["STC fragment","EMP pulse","warp-tainted generator","controlled detonation","ancient guardian"]
+    .filter(item=>src.toLowerCase().includes(item.toLowerCase()));
+  const events=artifacts.map(item=>`${item} referenced in seed dossier.`);
+
+  const nameMatch=src.match(/C-402 Epsilon Varun/i);
+  const roleCandidates=[
+    "Magos Biologis and Explorator of the Adeptus Mechanicus",
+    "Veteran Artifex of the Ordo Reductor",
+    "Master of Medicae Arts and Xenobiology",
+    "Inquisitor's Ally",
+    "Data-Savant",
+    "Custodian of the Armorium"
+  ];
+  const roles=roleCandidates.filter(r=>src.toLowerCase().includes(r.toLowerCase()));
+
+  return {
+    profile:{name:nameMatch?"C-402 Epsilon Varun":"",roles},
+    chapters,
+    persons,
+    places,
+    events,
+    artifacts
+  };
+}
+function showSeedToast(message){
+  const toast=document.getElementById("seedToast");
+  if(!toast) return;
+  toast.textContent=message;
+  toast.classList.add("show");
+  if(seedToastTimer) clearTimeout(seedToastTimer);
+  seedToastTimer=setTimeout(()=>toast.classList.remove("show"),1900);
+}
+function importSeed(mode="all"){
+  const seed=parseSeedText(SEED_TEXT);
+  const counts={profile:0,chapters:0,persons:0,events:0,places:0};
+
+  if((mode==="all" || mode==="profile") && seed.profile){
+    let profile=state.chapters.find(c=>c.id==="profile");
+    if(!profile){
+      profile={id:"profile",tag:"CORE",label:"Profile Node",body:""};
+      state.chapters.unshift(profile);
+    }
+    const existing=normalizeKey(profile.body);
+    const additions=[];
+    if(seed.profile.name && !existing.includes(normalizeKey(seed.profile.name))){
+      additions.push(`<p><strong>Designation:</strong> ${escapeHtml(seed.profile.name)}</p>`);
+    }
+    if(seed.profile.roles && seed.profile.roles.length){
+      const missingRoles=seed.profile.roles.filter(role=>!existing.includes(normalizeKey(role)));
+      if(missingRoles.length){
+        additions.push(`<p><strong>Titles:</strong> ${escapeHtml(missingRoles.join("; "))}</p>`);
+      }
+    }
+    if(additions.length){
+      profile.body=(profile.body||"")+additions.join("");
+      counts.profile+=additions.length;
+    }
+  }
+
+  if(mode==="all" || mode==="chapters"){
+    const existingChapterLabels=new Set(state.chapters.map(c=>normalizeKey(c.label||c.id)));
+    for(const ch of seed.chapters){
+      const key=normalizeKey(ch.title);
+      if(!key || existingChapterLabels.has(key)) continue;
+      const idBase=`seed-${slugifySeed(ch.title)}`;
+      let id=idBase;
+      while(state.chapters.some(c=>c.id===id)){ id=`${idBase}-${Math.random().toString(36).slice(2,5)}`; }
+      state.chapters.push({
+        id,
+        tag:"SEED",
+        label:ch.title,
+        body:makeSeedChapterBody(ch.title,ch.body)
+      });
+      existingChapterLabels.add(key);
+      counts.chapters+=1;
+    }
+  }
+
+  if(mode==="all" || mode==="poi"){
+    const existingPeople=new Set((state.persons||[]).map(p=>normalizeKey(p.name)));
+    for(const person of seed.persons){
+      const key=normalizeKey(person.name);
+      if(!key || existingPeople.has(key)) continue;
+      state.persons.unshift({
+        id:makeId("poi"),
+        name:person.name,
+        affiliation:person.affiliation||"Unaligned",
+        image:"",
+        notes:person.notes||"Seed import entry."
+      });
+      existingPeople.add(key);
+      counts.persons+=1;
+    }
+  }
+
+  if(mode==="all" || mode==="events"){
+    const existingRevs=new Set(state.revisions.map(r=>normalizeKey(r.note)));
+    for(const note of seed.events){
+      const key=normalizeKey(note);
+      if(!key || existingRevs.has(key)) continue;
+      state.revisions.unshift({id:makeId("rev"),date:"SEED",note});
+      existingRevs.add(key);
+      counts.events+=1;
+    }
+  }
+
+  if(mode==="all" || mode==="events"){
+    if(!Array.isArray(state.entities)) state.entities=[];
+    const existingEntities=new Set(state.entities.map(e=>normalizeKey(e.name)));
+    for(const place of seed.places){
+      const key=normalizeKey(place);
+      if(!key || existingEntities.has(key)) continue;
+      state.entities.push({id:makeId("ent"),type:"Place",name:place,tags:["Seed"],description:"Seed-extracted location.",fields:{source:"varun_background_ocr.txt"},relations:[]});
+      existingEntities.add(key);
+      counts.places+=1;
+    }
+    for(const artifact of seed.artifacts){
+      const key=normalizeKey(artifact);
+      if(!key || existingEntities.has(key)) continue;
+      state.entities.push({id:makeId("ent"),type:"Artifact/Event",name:artifact,tags:["Seed"],description:"Seed-extracted event/artifact.",fields:{source:"varun_background_ocr.txt"},relations:[]});
+      existingEntities.add(key);
+    }
+  }
+
+  saveState();
+  renderAll();
+  const total=counts.profile+counts.chapters+counts.persons+counts.events+counts.places;
+  showSeedToast(`Imported ${total} items`);
+}
 
 function ensureConstitutionEntity(){
   if(!state.entities) state.entities=[];
@@ -2093,6 +2428,12 @@ function makeBox(ch){
   const body=document.createElement("div");
   body.className="box-body";
   body.innerHTML=ch.body||"";
+  if(ch.id==="profile"){
+    const tools=document.createElement("div");
+    tools.className="seed-tools";
+    tools.innerHTML=`<button class="seed-import-btn" type="button" data-seed-import="profile">Import Seed</button>`;
+    body.prepend(tools);
+  }
   div.appendChild(body);
   return div;
 }
@@ -2114,7 +2455,7 @@ function renderRevisionBox(){
   const list=state.revisions.map(r=>`<p><span class="pill" style="margin-right:8px;">${escapeHtml(r.date||"")}</span> ${escapeHtml(r.note||"")}</p>`).join("");
   const body=document.createElement("div");
   body.className="box-body";
-  body.innerHTML=(list||`<p class="classified">No revisions recorded.</p>`);
+  body.innerHTML=`<div class="seed-tools"><button class="seed-import-btn" type="button" data-seed-import="events">Import Seed</button></div>`+(list||`<p class="classified">No revisions recorded.</p>`);
   div.appendChild(body);
   return div;
 }
@@ -2296,6 +2637,7 @@ function renderContent(){
     chronoPanel.appendChild(makeBox(ch));
   }
   chronoPanel.appendChild(renderSealedArchivesBox());
+  chronoPanel.appendChild(renderRevisionBox());
 
   const poiPanel=document.createElement("div");
   poiPanel.className="tab-panel";
@@ -2303,6 +2645,10 @@ function renderContent(){
   const h2b=document.createElement("h2");
   h2b.textContent="Persons of Interest";
   poiPanel.appendChild(h2b);
+  const poiSeedTools=document.createElement("div");
+  poiSeedTools.className="seed-tools";
+  poiSeedTools.innerHTML=`<button class="seed-import-btn" type="button" data-seed-import="poi">Import Seed</button>`;
+  poiPanel.appendChild(poiSeedTools);
   const list=document.createElement("div");
   list.className="poi-tab-list";
   const people=structuredClone(state.persons||[]).sort((a,b)=>{
@@ -2423,6 +2769,7 @@ function getSidebarChapters(){
   out.push({id:"constitution",tag:"DOC",label:"Constitution"});
   out.push({id:"database",tag:"DB",label:"Database"});
   out.push({id:"sealed-archives",tag:"DOCS",label:"Sealed Archives"});
+  out.push({id:"revision-log",tag:"REV",label:"Revision Log"});
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
     out.push({id:ch.id,tag:ch.tag||"??",label:ch.label||ch.id});
@@ -2438,8 +2785,9 @@ function renderSidebars(){
       <span class="tag">${escapeHtml(c.tag)}</span>
       <span class="label">${escapeHtml(c.label)}</span>
     </a>`).join("");
-  chaptersSidebar.innerHTML=html;
-  chaptersDrawer.innerHTML=html;
+  const seedBtn=`<div class="seed-tools"><button class="seed-import-btn" type="button" data-seed-import="chapters">Import Seed</button></div>`;
+  chaptersSidebar.innerHTML=seedBtn+html;
+  chaptersDrawer.innerHTML=seedBtn+html;
 }
 function smoothScrollTo(id){
   if(!id) return;
@@ -2550,6 +2898,13 @@ function setPreloadBars(count){
 }
 
 document.addEventListener("click",(e)=>{
+  const seedBtn=e.target.closest("button[data-seed-import]");
+  if(seedBtn){
+    e.preventDefault();
+    const mode=seedBtn.getAttribute("data-seed-import")||"all";
+    importSeed(mode);
+    return;
+  }
   const a=e.target.closest('a[data-target]'); if(!a) return;
   const targetId=a.getAttribute("data-target");
   if(targetId==="database"){
