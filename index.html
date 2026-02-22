@@ -637,6 +637,55 @@
   .item .meta .id{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:440px;}
   .item .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
   .note{font-size:11px;color:var(--muted);line-height:1.4;}
+  .docs-list{display:flex;flex-direction:column;gap:10px;}
+  .doc-item{
+    border:1px solid #24303b;
+    border-radius:12px;
+    background:rgba(8,12,16,.85);
+    padding:12px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .doc-meta{min-width:0;display:flex;flex-direction:column;gap:4px;}
+  .doc-meta .title{font-size:13px;color:var(--text);font-weight:600;}
+  .doc-meta .file{font-size:11px;color:var(--muted);}
+  .doc-meta .desc{font-size:12px;color:var(--text);opacity:.9;line-height:1.45;}
+  .doc-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+  .docs-modal .panel{width:min(980px,96vw);padding:12px;}
+  .docs-modal-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .docs-modal-title{
+    margin:0;
+    font-family:var(--royal);
+    font-size:14px;
+    letter-spacing:.6px;
+    color:var(--text);
+  }
+  .docs-frame-wrap{
+    border:1px solid #24303b;
+    border-radius:10px;
+    overflow:hidden;
+    background:rgba(8,12,16,.92);
+    min-height:70vh;
+  }
+  .docs-frame{
+    width:100%;
+    height:70vh;
+    border:0;
+    background:#0c1117;
+  }
+  .docs-fallback{
+    margin-top:8px;
+    font-size:12px;
+    color:var(--muted);
+  }
   .sidebar{display:none;}
   @media (max-width:980px){.layout{padding-top:14px;}.search{width:52vw;min-width:180px;}}
   @media (max-width:560px){.brand{min-width:0;}.brand .subtitle{display:none;}.search{width:56vw;}body{font-size:14px;}}
@@ -789,6 +838,19 @@
     <div class="preload-bars" id="chapterPreloadBars" aria-hidden="true">
       <span></span><span></span><span></span><span></span><span></span>
     </div>
+  </div>
+</div>
+
+<div class="modal docs-modal" id="docsModal" role="dialog" aria-modal="true" aria-labelledby="docsModalTitle">
+  <div class="panel">
+    <div class="docs-modal-top">
+      <h3 class="docs-modal-title" id="docsModalTitle">Sealed Document</h3>
+      <button class="iconbtn" id="closeDocsModal" aria-label="Close document viewer">✕</button>
+    </div>
+    <div class="docs-frame-wrap">
+      <iframe class="docs-frame" id="docsFrame" title="Document preview" loading="lazy"></iframe>
+    </div>
+    <p class="docs-fallback">If preview fails, the document will open in a new tab automatically.</p>
   </div>
 </div>
 
@@ -1750,6 +1812,11 @@ const DEFAULT_CHAPTERS=[
 ];
 const DEFAULT_REVISIONS=[{id:"rev-1",date:"M41.999 — Initial Archive Compilation",note:"First public Noosphere Archive rendering. Search + chapters index online."}];
 
+const DEFAULT_DOCS=[
+  {title:"Ship Constitution - The Last Rose",filename:"ship-constitution-last-rose.pdf",classification:"Magenta-7",description:"Primary charter and operational doctrine of The Last Rose."},
+  {title:"Mechanicus Field Protocols",filename:"mechanicus-field-protocols.pdf",classification:"Forge Restricted",description:"Ritual and combat protocols for expeditionary deployment."},
+  {title:"Relic Recovery Ledger",filename:"relic-recovery-ledger.pdf",classification:"Classified",description:"Recovered artifact registry with source and integrity annotations."}
+];
 function makeId(prefix="id"){return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;}
 const DEFAULT_PERSONS=[];
 const DEFAULT_ENTITIES=[
@@ -1883,6 +1950,52 @@ ensureConstitutionEntity();
 saveState();
 
 const contentRoot=document.getElementById("contentRoot");
+const docsModal=document.getElementById("docsModal");
+const closeDocsModal=document.getElementById("closeDocsModal");
+const docsFrame=document.getElementById("docsFrame");
+const docsModalTitle=document.getElementById("docsModalTitle");
+let pendingDocFallback=null;
+function docPath(filename){
+  const safeName=String(filename||"").trim();
+  return `assets/docs/${encodeURIComponent(safeName)}`;
+}
+function openDocInNewTab(filename){
+  const path=docPath(filename);
+  const opened=window.open(path,"_blank","noopener");
+  if(!opened) window.location.href=path;
+}
+function closeDocsModalFn(){
+  if(pendingDocFallback){
+    clearTimeout(pendingDocFallback);
+    pendingDocFallback=null;
+  }
+  if(docsFrame){
+    docsFrame.removeAttribute("src");
+    docsFrame.onload=null;
+    docsFrame.onerror=null;
+  }
+  if(docsModal) docsModal.classList.remove("open");
+}
+function openDocsModalFn(filename,title){
+  if(!docsModal || !docsFrame) return openDocInNewTab(filename);
+  const path=docPath(filename);
+  let resolved=false;
+  const fallback=()=>{
+    if(resolved) return;
+    resolved=true;
+    closeDocsModalFn();
+    openDocInNewTab(filename);
+  };
+  docsModalTitle.textContent=title||"Sealed Document";
+  docsFrame.onload=()=>{resolved=true; if(pendingDocFallback){clearTimeout(pendingDocFallback); pendingDocFallback=null;}};
+  docsFrame.onerror=fallback;
+  if(pendingDocFallback) clearTimeout(pendingDocFallback);
+  pendingDocFallback=setTimeout(()=>{if(!resolved) fallback();},2200);
+  docsFrame.src=path;
+  docsModal.classList.add("open");
+}
+if(closeDocsModal) closeDocsModal.addEventListener("click",closeDocsModalFn);
+if(docsModal) docsModal.addEventListener("click",(e)=>{if(e.target===docsModal) closeDocsModalFn();});
 function escapeHtml(s){
   return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
@@ -1931,6 +2044,38 @@ function renderRevisionBox(){
   body.className="box-body";
   body.innerHTML=(list||`<p class="classified">No revisions recorded.</p>`);
   div.appendChild(body);
+  return div;
+}
+
+function renderSealedArchivesBox(){
+  const docs=structuredClone(DEFAULT_DOCS);
+  const div=document.createElement("div");
+  div.className="archive-box";
+  div.id="sealed-archives";
+  div.dataset.kind="docs";
+  const items=docs.map(doc=>`
+    <div class="doc-item" data-doc-file="${escapeHtml(doc.filename||"")}">
+      <div class="doc-meta">
+        <div class="title">${escapeHtml(doc.title||"Untitled Document")}</div>
+        <div class="file">${escapeHtml(doc.filename||"unknown.pdf")}</div>
+        <div class="row"><span class="pill">${escapeHtml(doc.classification||"Unclassified")}</span></div>
+        <div class="desc">${escapeHtml(doc.description||"No description.")}</div>
+      </div>
+      <div class="doc-actions">
+        <button class="btn" type="button" data-doc-open="${escapeHtml(doc.filename||"")}">OPEN</button>
+        <button class="btn primary" type="button" data-doc-view="${escapeHtml(doc.filename||"")}" data-doc-title="${escapeHtml(doc.title||"Sealed Document")}">VIEW</button>
+      </div>
+    </div>`).join("");
+  div.innerHTML=`
+    <div class="box-header">
+      <span class="box-tag">DOCS</span>
+      <span class="box-title">Sealed Archives</span>
+    </div>
+    <span class="corner-latch lt"></span><span class="corner-latch rt"></span><span class="corner-latch lb"></span><span class="corner-latch rb"></span>
+    <div class="box-body">
+      <p class="note">Authorized retrieval node: assets/docs/</p>
+      <div class="docs-list">${items || `<p class="classified">No documents registered.</p>`}</div>
+    </div>`;
   return div;
 }
 
@@ -2078,6 +2223,7 @@ function renderContent(){
     ensureVarunLink(ch);
     chronoPanel.appendChild(makeBox(ch));
   }
+  chronoPanel.appendChild(renderSealedArchivesBox());
 
   const poiPanel=document.createElement("div");
   poiPanel.className="tab-panel";
@@ -2204,6 +2350,7 @@ function getSidebarChapters(){
   const out=[];
   out.push({id:"constitution",tag:"DOC",label:"Constitution"});
   out.push({id:"database",tag:"DB",label:"Database"});
+  out.push({id:"sealed-archives",tag:"DOCS",label:"Sealed Archives"});
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
     out.push({id:ch.id,tag:ch.tag||"??",label:ch.label||ch.id});
@@ -2221,6 +2368,21 @@ function renderSidebars(){
     </a>`).join("");
   chaptersSidebar.innerHTML=html;
   chaptersDrawer.innerHTML=html;
+}
+function smoothScrollTo(id){
+  if(!id) return;
+  if(id==="database"){
+    setPageTab("database");
+    updateDatabasePanel();
+  } else if(id==="constitution"){
+    setPageTab("constitution");
+  } else {
+    setPageTab("chrono");
+  }
+  requestAnimationFrame(()=>{
+    const el=document.getElementById(id);
+    if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
+  });
 }
 const chapterPopup=document.getElementById("chapterPopup");
 const closeChapterPopup=document.getElementById("closeChapterPopup");
@@ -2333,6 +2495,14 @@ document.addEventListener("click",(e)=>{
     closeDrawer();
     return;
   }
+  if(targetId==="sealed-archives"){
+    e.preventDefault();
+    setPageTab("chrono");
+    const targetEl=document.getElementById("sealed-archives");
+    if(targetEl) targetEl.scrollIntoView({behavior:"smooth",block:"start"});
+    closeDrawer();
+    return;
+  }
   if(targetId){
     const targetEl=document.getElementById(targetId);
     const label=a.querySelector(".label");
@@ -2417,6 +2587,24 @@ contentRoot.addEventListener("submit",(e)=>{
   selectedEntityId=id;
   form.reset();
   updateDatabasePanel();
+});
+
+/* Sealed Archives docs */
+contentRoot.addEventListener("click",(e)=>{
+  const openBtn=e.target.closest("button[data-doc-open]");
+  if(openBtn){
+    e.preventDefault();
+    openDocInNewTab(openBtn.getAttribute("data-doc-open")||"");
+    return;
+  }
+  const viewBtn=e.target.closest("button[data-doc-view]");
+  if(viewBtn){
+    e.preventDefault();
+    openDocsModalFn(
+      viewBtn.getAttribute("data-doc-view")||"",
+      viewBtn.getAttribute("data-doc-title")||"Sealed Document"
+    );
+  }
 });
 
 /* Constitution tools */
@@ -2522,6 +2710,7 @@ chapterModal.addEventListener("click",(e)=>{if(e.target===chapterModal) closeCha
 chapterModalLink.addEventListener("click",scrollToPoi);
 document.addEventListener("keydown",(e)=>{
   if(e.key==="Escape" && chapterModal.classList.contains("open")) closeChapterModalFn();
+  if(e.key==="Escape" && docsModal && docsModal.classList.contains("open")) closeDocsModalFn();
 });
 
 /* Search (restore original each input) */
