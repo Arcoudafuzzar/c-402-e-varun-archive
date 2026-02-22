@@ -802,6 +802,7 @@
       <div class="row" id="archiveTools" style="margin-top:10px;gap:8px;">
         <button class="btn" id="exportArchive" type="button">Export Archive</button>
         <button class="btn" id="importArchive" type="button">Import Archive</button>
+        <button class="btn" type="button" data-registry-import>Import Registry</button>
         <input id="importFile" type="file" accept="application/json" style="display:none" />
       </div>
 </aside>
@@ -838,6 +839,7 @@
       <div class="row" id="archiveTools" style="margin-top:10px;gap:8px;">
         <button class="btn" id="exportArchive" type="button">Export Archive</button>
         <button class="btn" id="importArchive" type="button">Import Archive</button>
+        <button class="btn" type="button" data-registry-import>Import Registry</button>
         <input id="importFile" type="file" accept="application/json" style="display:none" />
       </div>
     </aside>
@@ -1913,6 +1915,15 @@ const DEFAULT_ENTITIES=[
   {id:"ent-ship-constitution",type:"document",name:"Ship Constitution – The Last Rose",tags:["CORE ARCHIVE","DOCTRINE"],description:"Primary charter and operational doctrine of The Last Rose.",fields:{category:"CORE ARCHIVE / DOCTRINE",vault:"Sigma/IX-A",integrity:"94.1%"},relations:[{kind:"authorizes",targetId:"ent-ordo-reductor",note:"Codex sealed under Ordo Reductor oversight."}]},
   {id:"ent-ordo-reductor",type:"Faction",name:"Ordo Reductor",tags:["Mechanicus","Ordo"],description:"Dedicated to siege logic, macro-artillery, and sacred demolition.",fields:{sigil:"O.R-Theta",priority:"High"},relations:[]},
 ];
+const EMPTY_REGISTRY=Object.freeze({
+  people:[],
+  institutions:[],
+  customs_protocols:[],
+  roles_index:[],
+  noble_houses:[],
+  house_rivalries:[],
+  house_alliances:[]
+});
 const CONSTITUTION_SECTIONS={
   governance:`The Last Rose — Μανιφέστο και Εγχειρίδιο Χρήσης
 Διασφάλιση της Ευημερίας, της Ασφάλειας και της Στρατιωτικής Ισχύος
@@ -2080,23 +2091,46 @@ Master of Medicae Arts and Xenobiology
 Inquisitor's Ally, Data-Savant, and Custodian of the
 Armorium`;
 function loadState(){
+  function makeDefaultState(){
+    return {
+      chapters:structuredClone(DEFAULT_CHAPTERS),
+      revisions:structuredClone(DEFAULT_REVISIONS),
+      persons:structuredClone(DEFAULT_PERSONS),
+      entities:structuredClone(DEFAULT_ENTITIES),
+      registry:structuredClone(EMPTY_REGISTRY)
+    };
+  }
+  function normalizeStateShape(parsed){
+    const normalized=makeDefaultState();
+    if(parsed&&Array.isArray(parsed.chapters)) normalized.chapters=parsed.chapters;
+    if(parsed&&Array.isArray(parsed.revisions)) normalized.revisions=parsed.revisions;
+    if(parsed&&Array.isArray(parsed.persons)) normalized.persons=parsed.persons;
+    if(parsed&&Array.isArray(parsed.entities)) normalized.entities=parsed.entities;
+    if(parsed&&parsed.registry&&typeof parsed.registry==="object"){
+      const reg=parsed.registry;
+      if(Array.isArray(reg.people)) normalized.registry.people=reg.people;
+      if(Array.isArray(reg.institutions)) normalized.registry.institutions=reg.institutions;
+      if(Array.isArray(reg.customs_protocols)) normalized.registry.customs_protocols=reg.customs_protocols;
+      if(Array.isArray(reg.roles_index)) normalized.registry.roles_index=reg.roles_index;
+      if(Array.isArray(reg.noble_houses)) normalized.registry.noble_houses=reg.noble_houses;
+      if(Array.isArray(reg.house_rivalries)) normalized.registry.house_rivalries=reg.house_rivalries;
+      if(Array.isArray(reg.house_alliances)) normalized.registry.house_alliances=reg.house_alliances;
+    }
+    return normalized;
+  }
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
-    if(!raw) return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS),entities:structuredClone(DEFAULT_ENTITIES)};
+    if(!raw) return makeDefaultState();
     const parsed=JSON.parse(raw);
     if(!parsed||!Array.isArray(parsed.chapters)||!Array.isArray(parsed.revisions)) throw new Error("bad");
-    const chapters=parsed.chapters;
+    const normalized=normalizeStateShape(parsed);
+    const chapters=normalized.chapters;
     if(!chapters.some(c=>c && c.id==="profile"))
       chapters.unshift(structuredClone(DEFAULT_CHAPTERS.find(c=>c.id==="profile")));
-    const entities=Array.isArray(parsed.entities)?parsed.entities:structuredClone(DEFAULT_ENTITIES);
-    return {
-      chapters,
-      revisions:parsed.revisions,
-      persons:Array.isArray(parsed.persons)?parsed.persons:structuredClone(DEFAULT_PERSONS),
-      entities
-    };
+    normalized.chapters=chapters;
+    return normalized;
   }catch(e){
-    return {chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS),entities:structuredClone(DEFAULT_ENTITIES)};
+    return makeDefaultState();
   }
 }
 function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
@@ -3275,11 +3309,183 @@ function scrollToPoi(){
   if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
+let registrySeedCache=null;
+async function getRegistrySeedData(){
+  if(registrySeedCache) return registrySeedCache;
+  const res=await fetch("./registry_seed.json",{cache:"no-store"});
+  if(!res.ok) throw new Error(`Could not load registry_seed.json (${res.status})`);
+  registrySeedCache=await res.json();
+  return registrySeedCache;
+}
+function mergeUniqueRows(target,rows,keyFn){
+  const keys=new Set(target.map(keyFn).filter(Boolean));
+  let added=0;
+  for(const row of rows){
+    const key=keyFn(row);
+    if(!key||keys.has(key)) continue;
+    target.push(row);
+    keys.add(key);
+    added++;
+  }
+  return added;
+}
+function addEntityIfMissing(entity,seen){
+  const key=normalizeKey(`${entity.type}:${entity.name}`);
+  if(!key||seen.has(key)) return false;
+  seen.add(key);
+  state.entities.push(entity);
+  return true;
+}
+function mapRegistryPerson(row){
+  const name=String(row.Name||"").trim();
+  if(!name) return null;
+  const house=String(row.House||row["Status/House"]||"").trim();
+  const dept=String(row.Department||"").trim();
+  const role=String(row.Role||"").trim();
+  const notes=[
+    role?`Role: ${role}`:"",
+    row.Plot_Hook?`Hook: ${row.Plot_Hook}`:"",
+    row.Private_Flaw?`Flaw: ${row.Private_Flaw}`:"",
+    row.Loyalty_Vector?`Loyalty: ${row.Loyalty_Vector}`:"",
+    row.Threat_Level?`Threat: ${row.Threat_Level}`:"",
+    row.Notes?`Notes: ${row.Notes}`:""
+  ].filter(Boolean).join(" | ");
+  return {
+    id:`poi-${slugifySeed(row.Person_ID||name)}`,
+    name,
+    affiliation:[house,dept].filter(Boolean).join(" / "),
+    notes,
+    source:"registry_seed"
+  };
+}
+function mapInstitutionEntity(row){
+  const name=String(row.Name||"").trim();
+  if(!name) return null;
+  return {
+    id:`ent-inst-${slugifySeed(row.Institution_ID||name)}`,
+    type:"Institution",
+    name,
+    tags:[row.Type,row.Public_Image].filter(Boolean),
+    description:row.Function||"",
+    fields:{
+      institution_id:row.Institution_ID||"",
+      primary_threat:row.Primary_Threat||"",
+      dark_secret:row.Dark_Secret||"",
+      house_influence:row.House_Influence||"",
+      notes:row.Notes||""
+    },
+    relations:[]
+  };
+}
+function mapProtocolEntity(row){
+  const name=String(row.Title||"").trim();
+  if(!name) return null;
+  return {
+    id:`ent-proto-${slugifySeed(row.Protocol_ID||name)}`,
+    type:"Protocol",
+    name,
+    tags:[row.Kind,row.Owner_Office].filter(Boolean),
+    description:row.Steps_Short||"",
+    fields:{
+      protocol_id:row.Protocol_ID||"",
+      when_triggered:row.When_Triggered||"",
+      cost:row.Cost||"",
+      failure_mode:row.Failure_Mode||"",
+      rumor:row.Rumor||"",
+      notes:row.Notes||""
+    },
+    relations:[]
+  };
+}
+function mapRoleEntity(row){
+  const name=String(row.Role||"").trim();
+  if(!name) return null;
+  return {
+    id:`ent-role-${slugifySeed(name)}`,
+    type:"Role",
+    name,
+    tags:[row.Department,row.Domain,row.House_Typical].filter(Boolean),
+    description:row.Ship_Population_Context||"",
+    fields:{
+      assigned_person_id:row.Assigned_Person_ID||"",
+      notes:row.Notes||""
+    },
+    relations:[]
+  };
+}
+function mapHouseEntity(row){
+  const name=String(row.House||"").trim();
+  if(!name) return null;
+  return {
+    id:`ent-house-${slugifySeed(name)}`,
+    type:"NobleHouse",
+    name,
+    tags:[row.Sigil].filter(Boolean),
+    description:row.Style||"",
+    fields:{motto:row.Motto||""},
+    relations:[]
+  };
+}
+async function importRegistrySeed(){
+  const seed=await getRegistrySeedData();
+  if(!state.registry){
+    state.registry=structuredClone(EMPTY_REGISTRY);
+  }
+  let personsAdded=0;
+  let entitiesAdded=0;
+  let registryRowsAdded=0;
+
+  const personRows=Array.isArray(seed.People)?seed.People:[];
+  const personSeen=new Set((state.persons||[]).map(p=>normalizeKey(p.name||p.id)));
+  for(const row of personRows){
+    const mapped=mapRegistryPerson(row);
+    if(!mapped) continue;
+    const key=normalizeKey(mapped.name);
+    if(!key||personSeen.has(key)) continue;
+    personSeen.add(key);
+    state.persons.unshift(mapped);
+    personsAdded++;
+  }
+
+  const entitySeen=new Set((state.entities||[]).map(e=>normalizeKey(`${e.type}:${e.name}`)));
+  for(const row of (Array.isArray(seed.Institutions)?seed.Institutions:[])){
+    const ent=mapInstitutionEntity(row);
+    if(ent&&addEntityIfMissing(ent,entitySeen)) entitiesAdded++;
+  }
+  for(const row of (Array.isArray(seed.Customs_Protocols)?seed.Customs_Protocols:[])){
+    const ent=mapProtocolEntity(row);
+    if(ent&&addEntityIfMissing(ent,entitySeen)) entitiesAdded++;
+  }
+  for(const row of (Array.isArray(seed.Roles_Index)?seed.Roles_Index:[])){
+    const ent=mapRoleEntity(row);
+    if(ent&&addEntityIfMissing(ent,entitySeen)) entitiesAdded++;
+  }
+  for(const row of (Array.isArray(seed.Noble_Houses)?seed.Noble_Houses:[])){
+    const ent=mapHouseEntity(row);
+    if(ent&&addEntityIfMissing(ent,entitySeen)) entitiesAdded++;
+  }
+
+  const reg=state.registry;
+  registryRowsAdded+=mergeUniqueRows(reg.people,personRows,r=>normalizeKey(r.Person_ID||r.Name));
+  registryRowsAdded+=mergeUniqueRows(reg.institutions,Array.isArray(seed.Institutions)?seed.Institutions:[],r=>normalizeKey(r.Institution_ID||r.Name));
+  registryRowsAdded+=mergeUniqueRows(reg.customs_protocols,Array.isArray(seed.Customs_Protocols)?seed.Customs_Protocols:[],r=>normalizeKey(r.Protocol_ID||r.Title));
+  registryRowsAdded+=mergeUniqueRows(reg.roles_index,Array.isArray(seed.Roles_Index)?seed.Roles_Index:[],r=>normalizeKey(`${r.Role}|${r.Assigned_Person_ID}`));
+  registryRowsAdded+=mergeUniqueRows(reg.noble_houses,Array.isArray(seed.Noble_Houses)?seed.Noble_Houses:[],r=>normalizeKey(r.House));
+  registryRowsAdded+=mergeUniqueRows(reg.house_rivalries,Array.isArray(seed.House_Rivalries)?seed.House_Rivalries:[],r=>normalizeKey(`${r.House_A}|${r.House_B}|${r.Cause}`));
+  registryRowsAdded+=mergeUniqueRows(reg.house_alliances,Array.isArray(seed.House_Alliances)?seed.House_Alliances:[],r=>normalizeKey(`${r.House_A}|${r.House_B}|${r.Basis}`));
+
+  saveState();
+  renderAll();
+  showSeedToast(`Imported ${personsAdded+entitiesAdded+registryRowsAdded} items`);
+}
+
 /* Export / Import */
 const exportBtn=document.getElementById("exportArchive");
 const importBtn=document.getElementById("importArchive");
 const importFile=document.getElementById("importFile");
-if(exportBtn) exportBtn.addEventListener("click",()=>{
+const registryImportBtns=Array.from(document.querySelectorAll("button[data-registry-import]"));
+const quickExportBtn=document.getElementById("quickExportBtn");
+function exportArchiveJson(){
   const payload=JSON.stringify(state,null,2);
   const blob=new Blob([payload],{type:"application/json"});
   const a=document.createElement("a");
@@ -3287,8 +3493,22 @@ if(exportBtn) exportBtn.addEventListener("click",()=>{
   a.download="noosphere-archive-backup.json";
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(a.href);
-});
+}
+if(exportBtn) exportBtn.addEventListener("click",exportArchiveJson);
+if(quickExportBtn) quickExportBtn.addEventListener("click",exportArchiveJson);
 if(importBtn) importBtn.addEventListener("click",()=>{ if(importFile) importFile.click(); });
+for(const btn of registryImportBtns){
+  btn.addEventListener("click",async ()=>{
+    btn.disabled=true;
+    try{
+      await importRegistrySeed();
+    }catch(err){
+      alert(`Registry import failed: ${err.message||err}`);
+    }finally{
+      btn.disabled=false;
+    }
+  });
+}
 if(importFile) importFile.addEventListener("change",(e)=>{
   const file=e.target.files && e.target.files[0];
   if(!file) return;
@@ -3305,7 +3525,18 @@ if(importFile) importFile.addEventListener("change",(e)=>{
         chapters:parsed.chapters,
         revisions:parsed.revisions,
         persons:parsed.persons,
-        entities:parsed.entities
+        entities:parsed.entities,
+        registry:parsed.registry && typeof parsed.registry==="object"
+          ? {
+              people:Array.isArray(parsed.registry.people)?parsed.registry.people:[],
+              institutions:Array.isArray(parsed.registry.institutions)?parsed.registry.institutions:[],
+              customs_protocols:Array.isArray(parsed.registry.customs_protocols)?parsed.registry.customs_protocols:[],
+              roles_index:Array.isArray(parsed.registry.roles_index)?parsed.registry.roles_index:[],
+              noble_houses:Array.isArray(parsed.registry.noble_houses)?parsed.registry.noble_houses:[],
+              house_rivalries:Array.isArray(parsed.registry.house_rivalries)?parsed.registry.house_rivalries:[],
+              house_alliances:Array.isArray(parsed.registry.house_alliances)?parsed.registry.house_alliances:[]
+            }
+          : structuredClone(EMPTY_REGISTRY)
       };
       saveState();
       renderAll();
@@ -3632,7 +3863,13 @@ if(hasAdminUI){
   });
   resetBtn.addEventListener("click",()=>{
     if(!confirm("Reset local data to defaults?")) return;
-    state={chapters:structuredClone(DEFAULT_CHAPTERS),revisions:structuredClone(DEFAULT_REVISIONS),persons:structuredClone(DEFAULT_PERSONS),entities:structuredClone(DEFAULT_ENTITIES)};
+    state={
+      chapters:structuredClone(DEFAULT_CHAPTERS),
+      revisions:structuredClone(DEFAULT_REVISIONS),
+      persons:structuredClone(DEFAULT_PERSONS),
+      entities:structuredClone(DEFAULT_ENTITIES),
+      registry:structuredClone(EMPTY_REGISTRY)
+    };
     saveState(); renderAll(); renderAdminLists(); resetChapterForm(); resetRevForm();
   });
   importBtn.addEventListener("click",()=>{
@@ -3645,7 +3882,18 @@ if(hasAdminUI){
         chapters:parsed.chapters,
         revisions:parsed.revisions,
         persons:Array.isArray(parsed.persons)?parsed.persons:[],
-        entities:Array.isArray(parsed.entities)?parsed.entities:structuredClone(DEFAULT_ENTITIES)
+        entities:Array.isArray(parsed.entities)?parsed.entities:structuredClone(DEFAULT_ENTITIES),
+        registry:parsed.registry && typeof parsed.registry==="object"
+          ? {
+              people:Array.isArray(parsed.registry.people)?parsed.registry.people:[],
+              institutions:Array.isArray(parsed.registry.institutions)?parsed.registry.institutions:[],
+              customs_protocols:Array.isArray(parsed.registry.customs_protocols)?parsed.registry.customs_protocols:[],
+              roles_index:Array.isArray(parsed.registry.roles_index)?parsed.registry.roles_index:[],
+              noble_houses:Array.isArray(parsed.registry.noble_houses)?parsed.registry.noble_houses:[],
+              house_rivalries:Array.isArray(parsed.registry.house_rivalries)?parsed.registry.house_rivalries:[],
+              house_alliances:Array.isArray(parsed.registry.house_alliances)?parsed.registry.house_alliances:[]
+            }
+          : structuredClone(EMPTY_REGISTRY)
       };
       saveState(); renderAll(); renderAdminLists(); resetChapterForm(); resetRevForm(); alert("Import complete.");
     }catch(e){alert("Invalid JSON.");}
