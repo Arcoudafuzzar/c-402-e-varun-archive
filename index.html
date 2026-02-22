@@ -2055,7 +2055,7 @@ let selectedEntityId=(state.entities && state.entities[0])?state.entities[0].id:
 let dbCategory="database";
 let dbEntityEditMode=false;
 let seedToastTimer=null;
-const LINK_UPDATES=[
+const LINK_UPDATES_SOURCE={link_updates:[
   {source:"poi-p038",add_links:["ent-varun","ent-ship-constitution","ent-ordo-reductor"]},
   {source:"poi-p039",add_links:["ent-role-lord-captain","ent-ship-constitution"]},
   {source:"poi-mlxfrbr6-hn38k1",add_links:["ent-proto-c007","ent-proto-c012"]},
@@ -2104,7 +2104,15 @@ const LINK_UPDATES=[
       {kind:"archives",targetId:"ent-proto-c021"}
     ]
   }
-];
+]};
+function normalizeLinkUpdatesConfig(input){
+  if(Array.isArray(input)) return input;
+  if(input && Array.isArray(input.link_updates)) return input.link_updates;
+  return [];
+}
+const LINK_UPDATES=normalizeLinkUpdatesConfig(LINK_UPDATES_SOURCE).filter(u=>
+  u && typeof u==="object" && typeof u.source==="string"
+);
 
 function normalizeKey(value){
   return String(value||"")
