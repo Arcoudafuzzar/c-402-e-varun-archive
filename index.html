@@ -2065,6 +2065,44 @@ function isPoiLinkableType(type){
   const t=normalizeKey(type);
   return t==="institution" || t==="noblehouse" || t==="protocol";
 }
+function autoLinkPoisByContext(options={}){
+  const onlyUnlinked=Boolean(options.onlyUnlinked);
+  const linkable=(state.entities||[]).filter(e=>isPoiLinkableType(e.type));
+  if(!linkable.length || !Array.isArray(state.persons)) return 0;
+  let added=0;
+  for(const person of state.persons){
+    if(!person || typeof person!=="object") continue;
+    if(!Array.isArray(person.links)) person.links=[];
+    if(onlyUnlinked && person.links.length) continue;
+    const existing=new Set(person.links);
+    const corpus=` ${normalizeKey([person.name,person.affiliation,person.notes].filter(Boolean).join(" "))} `;
+    for(const entity of linkable){
+      if(!entity || !entity.id || existing.has(entity.id)) continue;
+      const eName=normalizeKey(entity.name||"");
+      if(!eName) continue;
+      let score=0;
+      if(corpus.includes(` ${eName} `)) score+=8;
+      if(corpus.includes(eName)) score+=4;
+      for(const token of eName.split(" ").filter(t=>t.length>=5)){
+        if(corpus.includes(` ${token} `)) score+=1;
+      }
+      for(const tag of (entity.tags||[])){
+        const t=normalizeKey(tag);
+        if(t && t.length>=4 && corpus.includes(` ${t} `)) score+=2;
+      }
+      const t=normalizeKey(entity.type);
+      if(t==="noblehouse" && person.affiliation && normalizeKey(person.affiliation).includes(eName)) score+=3;
+      if(t==="institution" && person.affiliation && normalizeKey(person.affiliation).includes(eName)) score+=2;
+      if(t==="protocol" && person.notes && normalizeKey(person.notes).includes(eName)) score+=2;
+      if(score>=6){
+        person.links.push(entity.id);
+        existing.add(entity.id);
+        added++;
+      }
+    }
+  }
+  return added;
+}
 function slugifySeed(value){
   return normalizeKey(value).replace(/\s+/g,"-") || "seed";
 }
@@ -2748,7 +2786,7 @@ function renderContent(){
   poiPanel.appendChild(h2b);
   const poiSeedTools=document.createElement("div");
   poiSeedTools.className="seed-tools";
-  poiSeedTools.innerHTML=`<button class="seed-import-btn" type="button" data-seed-import="poi">Import Seed</button>`;
+  poiSeedTools.innerHTML=`<button class="seed-import-btn" type="button" data-seed-import="poi">Import Seed</button><button class="seed-import-btn" type="button" data-poi-autolink>Auto-Link Context</button>`;
   poiPanel.appendChild(poiSeedTools);
   const list=document.createElement("div");
   list.className="poi-tab-list";
@@ -3138,6 +3176,15 @@ contentRoot.addEventListener("input",(e)=>{
   updateDatabasePanel();
 });
 contentRoot.addEventListener("click",(e)=>{
+  const autoLinkBtn=e.target.closest("button[data-poi-autolink]");
+  if(autoLinkBtn){
+    const linked=autoLinkPoisByContext({onlyUnlinked:false});
+    saveState();
+    renderAll();
+    setPageTab("poi");
+    showSeedToast(`Auto-linked ${linked} POI connections`);
+    return;
+  }
   const addPoiLinkBtn=e.target.closest('button[data-act="poi-link-add"]');
   if(addPoiLinkBtn){
     const personId=addPoiLinkBtn.getAttribute("data-person-id")||"";
@@ -3483,9 +3530,10 @@ async function importRegistrySeed(){
   registryRowsAdded+=mergeUniqueRows(reg.house_rivalries,Array.isArray(seed.House_Rivalries)?seed.House_Rivalries:[],r=>normalizeKey(`${r.House_A}|${r.House_B}|${r.Cause}`));
   registryRowsAdded+=mergeUniqueRows(reg.house_alliances,Array.isArray(seed.House_Alliances)?seed.House_Alliances:[],r=>normalizeKey(`${r.House_A}|${r.House_B}|${r.Basis}`));
 
+  const autoLinked=autoLinkPoisByContext({onlyUnlinked:false});
   saveState();
   renderAll();
-  showSeedToast(`Imported ${personsAdded+entitiesAdded+registryRowsAdded} items`);
+  showSeedToast(`Imported ${personsAdded+entitiesAdded+registryRowsAdded} items (+${autoLinked} auto-links)`);
 }
 
 /* Export / Import */
