@@ -609,6 +609,22 @@
   .db-tag{font-size:10px;border:1px solid #2b3642;border-radius:999px;padding:2px 6px;color:#8fe3a6;}
   .db-fields{font-size:12px;color:var(--text);}
   .db-fields p{margin:6px 0;}
+  .db-subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px 0;}
+  .db-subtab{
+    border:1px solid #2b3642;
+    background:rgba(12,16,20,.85);
+    color:var(--text);
+    border-radius:999px;
+    padding:6px 10px;
+    font-family:var(--royal);
+    font-size:11px;
+    cursor:pointer;
+  }
+  .db-subtab.active{border-color:rgba(31,143,58,.9);box-shadow:0 0 0 1px rgba(31,143,58,.25);}
+  .db-subpanel{border:1px solid #24303b;border-radius:12px;background:rgba(12,16,20,.75);padding:12px;}
+  .db-subtitle{margin:0 0 8px 0;color:var(--text);font-size:12px;letter-spacing:.8px;font-family:var(--royal);}
+  .db-catalog{display:flex;flex-direction:column;gap:8px;}
+  .db-catalog-item{border:1px solid #24303b;border-radius:10px;background:rgba(8,12,16,.85);padding:8px;}
   .entity-link{color:#8fe3a6;text-decoration:none;border-bottom:1px dotted rgba(143,227,166,.6);}
   .entity-link:hover{color:#c7ffd8;text-shadow:0 0 8px rgba(31,143,58,.45);border-bottom-color:#c7ffd8;}
 
@@ -2087,6 +2103,7 @@ function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
 let state=loadState();
 let dbSearch="";
 let selectedEntityId=(state.entities && state.entities[0])?state.entities[0].id:null;
+let dbCategory="database";
 let seedToastTimer=null;
 
 function normalizeKey(value){
@@ -2615,16 +2632,31 @@ function renderDatabasePanelHTML(){
     return `<p><span class="pill">${escapeHtml(r.kind||"rel")}</span> ${escapeHtml(tname||"Unknown")}${r.note?` ? ${escapeHtml(r.note)}`:""}</p>`;
   }).join(""):`<p class="note">No relations recorded.</p>`;
   const seed=parseSeedText(SEED_TEXT);
-  const seedCats=`
-    <p><strong>Seed Chapters:</strong> ${(seed.chapters||[]).map(c=>escapeHtml(c.title)).join("; ") || "None"}</p>
-    <p><strong>Seed POI:</strong> ${(seed.persons||[]).map(p=>escapeHtml(p.name)).join("; ") || "None"}</p>
-    <p><strong>Seed Places:</strong> ${(seed.places||[]).map(p=>escapeHtml(p)).join("; ") || "None"}</p>
-    <p><strong>Seed Artifacts/Events:</strong> ${(seed.artifacts||[]).map(a=>escapeHtml(a)).join("; ") || "None"}</p>`;
-  const revCats=(state.revisions||[]).map(r=>`<p><span class="pill">REV</span> ${escapeHtml(r.date||"Undated")} :: ${escapeHtml(r.note||"")}</p>`).join("") || `<p class="note">No revisions recorded.</p>`;
-  const docCats=(DEFAULT_DOCS||[]).map(d=>`<p><span class="pill">DOC</span> ${escapeHtml(d.title||"Untitled")} <span class="note">(${escapeHtml(d.filename||"")})</span></p>`).join("") || `<p class="note">No docs configured.</p>`;
-
-  return `
-    <h2>Database</h2>
+  const seedPanel=`
+    <div class="db-subpanel">
+      <h4 class="db-subtitle">Seeds</h4>
+      <div class="db-catalog">
+        <div class="db-catalog-item"><strong>Seed Chapters</strong><p>${(seed.chapters||[]).map(c=>escapeHtml(c.title)).join("; ") || "None"}</p></div>
+        <div class="db-catalog-item"><strong>Seed POI</strong><p>${(seed.persons||[]).map(p=>escapeHtml(p.name)).join("; ") || "None"}</p></div>
+        <div class="db-catalog-item"><strong>Seed Places</strong><p>${(seed.places||[]).map(p=>escapeHtml(p)).join("; ") || "None"}</p></div>
+        <div class="db-catalog-item"><strong>Seed Artifacts/Events</strong><p>${(seed.artifacts||[]).map(a=>escapeHtml(a)).join("; ") || "None"}</p></div>
+      </div>
+    </div>`;
+  const revPanel=`
+    <div class="db-subpanel">
+      <h4 class="db-subtitle">Revision Log</h4>
+      <div class="db-catalog">
+        ${(state.revisions||[]).map(r=>`<div class="db-catalog-item"><span class="pill">REV</span> ${escapeHtml(r.date||"Undated")}<p>${escapeHtml(r.note||"")}</p></div>`).join("") || `<p class="note">No revisions recorded.</p>`}
+      </div>
+    </div>`;
+  const docsPanel=`
+    <div class="db-subpanel">
+      <h4 class="db-subtitle">Docs</h4>
+      <div class="db-catalog">
+        ${(DEFAULT_DOCS||[]).map(d=>`<div class="db-catalog-item"><strong>${escapeHtml(d.title||"Untitled")}</strong><p>${escapeHtml(d.filename||"")}</p><p>${escapeHtml(d.description||"")}</p></div>`).join("") || `<p class="note">No docs configured.</p>`}
+      </div>
+    </div>`;
+  const dbPanel=`
     <div class="db-layout">
       <section class="db-panel">
         <h4>Entities</h4>
@@ -2657,22 +2689,22 @@ function renderDatabasePanelHTML(){
             <div class="db-fields"><p><strong>Relations:</strong></p>${relations}</div>
           </div>`:`<p class="note">No entity selected.</p>`}
       </section>
+    </div>`;
+  const bodyByCategory={
+    database:dbPanel,
+    seeds:seedPanel,
+    revisions:revPanel,
+    docs:docsPanel
+  };
+  return `
+    <h2>Database</h2>
+    <div class="db-subtabs">
+      <button class="db-subtab ${dbCategory==="database"?"active":""}" type="button" data-db-category="database">Database</button>
+      <button class="db-subtab ${dbCategory==="seeds"?"active":""}" type="button" data-db-category="seeds">Seeds</button>
+      <button class="db-subtab ${dbCategory==="revisions"?"active":""}" type="button" data-db-category="revisions">Revision Log</button>
+      <button class="db-subtab ${dbCategory==="docs"?"active":""}" type="button" data-db-category="docs">Docs</button>
     </div>
-    <section class="db-panel" style="margin-top:12px;">
-      <h4>Subcategories</h4>
-      <div class="db-fields">
-        <p><strong>Seeds</strong></p>
-        ${seedCats}
-      </div>
-      <div class="db-fields">
-        <p><strong>Revision Log</strong></p>
-        ${revCats}
-      </div>
-      <div class="db-fields">
-        <p><strong>Docs</strong></p>
-        ${docCats}
-      </div>
-    </section>`;
+    ${bodyByCategory[dbCategory]||dbPanel}`;
 }
 
 
@@ -2896,9 +2928,6 @@ function getSidebarChapters(){
   const out=[];
   out.push({id:"constitution",tag:"DOC",label:"Constitution"});
   out.push({id:"database",tag:"DB",label:"Database"});
-  out.push({id:"sealed-archives",tag:"DOCS",label:"Sealed Archives"});
-  out.push({id:"revision-log",tag:"REV",label:"Revision Log"});
-  out.push({id:"seed-appendix",tag:"APP",label:"Seed Appendix"});
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
     out.push({id:ch.id,tag:ch.tag||"??",label:ch.label||ch.id});
@@ -3132,6 +3161,12 @@ contentRoot.addEventListener("input",(e)=>{
   updateDatabasePanel();
 });
 contentRoot.addEventListener("click",(e)=>{
+  const catBtn=e.target.closest("button[data-db-category]");
+  if(catBtn){
+    dbCategory=catBtn.getAttribute("data-db-category")||"database";
+    updateDatabasePanel();
+    return;
+  }
   const item=e.target.closest(".db-item[data-entity-id]");
   if(!item) return;
   selectedEntityId=item.getAttribute("data-entity-id");
