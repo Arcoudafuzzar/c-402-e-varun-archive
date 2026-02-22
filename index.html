@@ -2233,6 +2233,22 @@ function parseSeedText(text){
   const artifacts=["STC fragment","EMP pulse","warp-tainted generator","controlled detonation","ancient guardian"]
     .filter(item=>src.toLowerCase().includes(item.toLowerCase()));
   const events=artifacts.map(item=>`${item} referenced in seed dossier.`);
+  const skipLineKeys=new Set([
+    "=== page 1 ===","=== page 2 ===","=== page 3 ===","name and background:","personal records and memoirs of c-402 epsilon varun",
+    "in service to the omnissiah: the chronicles of c-402 epsilon varun"
+  ]);
+  const knownTerms=[
+    "c-402 epsilon varun","inquisitor alaric voss","lucas rio","bleeding cog",
+    "thalasson v","hive secundus","stc fragment","emp pulse","warp-tainted generator","controlled detonation","ancient guardian"
+  ];
+  const leftovers=lines
+    .filter(line=>line && line.length>24)
+    .filter(line=>!skipLineKeys.has(normalizeKey(line)))
+    .filter(line=>!headings.map(h=>normalizeKey(h)).includes(normalizeKey(line)))
+    .filter(line=>{
+      const n=normalizeKey(line);
+      return !knownTerms.some(k=>n===normalizeKey(k));
+    });
 
   const nameMatch=src.match(/C-402 Epsilon Varun/i);
   const roleCandidates=[
@@ -2251,8 +2267,29 @@ function parseSeedText(text){
     persons,
     places,
     events,
-    artifacts
+    artifacts,
+    leftovers
   };
+}
+function renderSeedAppendixBox(){
+  const seed=parseSeedText(SEED_TEXT);
+  const div=document.createElement("div");
+  div.className="archive-box";
+  div.id="seed-appendix";
+  div.dataset.kind="seed-appendix";
+  const lines=(seed.leftovers||[]).slice(0,80);
+  const listHtml=lines.map(line=>`<p>${escapeHtml(line)}</p>`).join("");
+  div.innerHTML=`
+    <div class="box-header">
+      <span class="box-tag">APP</span>
+      <span class="box-title">Seed Appendix</span>
+    </div>
+    <span class="corner-latch lt"></span><span class="corner-latch rt"></span><span class="corner-latch lb"></span><span class="corner-latch rb"></span>
+    <div class="box-body">
+      <p class="note">Residual lines from <code>varun_background_ocr.txt</code> retained for audit completeness.</p>
+      ${listHtml || `<p class="classified">No residual seed lines.</p>`}
+    </div>`;
+  return div;
 }
 function showSeedToast(message){
   const toast=document.getElementById("seedToast");
@@ -2700,6 +2737,7 @@ function renderContent(){
   }
   chronoPanel.appendChild(renderSealedArchivesBox());
   chronoPanel.appendChild(renderRevisionBox());
+  chronoPanel.appendChild(renderSeedAppendixBox());
 
   const poiPanel=document.createElement("div");
   poiPanel.className="tab-panel";
@@ -2829,6 +2867,7 @@ function getSidebarChapters(){
   out.push({id:"database",tag:"DB",label:"Database"});
   out.push({id:"sealed-archives",tag:"DOCS",label:"Sealed Archives"});
   out.push({id:"revision-log",tag:"REV",label:"Revision Log"});
+  out.push({id:"seed-appendix",tag:"APP",label:"Seed Appendix"});
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
     out.push({id:ch.id,tag:ch.tag||"??",label:ch.label||ch.id});
