@@ -2685,6 +2685,7 @@ function renderDatabasePanelHTML(){
   const revPanel=`
     <div class="db-subpanel">
       <h4 class="db-subtitle">Revision Log</h4>
+      <div class="seed-tools"><button class="seed-import-btn" type="button" data-seed-import="events">Import Seed</button></div>
       <div class="db-catalog">
         ${(state.revisions||[]).map(r=>`<div class="db-catalog-item"><span class="pill">REV</span> ${escapeHtml(r.date||"Undated")}<p>${escapeHtml(r.note||"")}</p></div>`).join("") || `<p class="note">No revisions recorded.</p>`}
       </div>
@@ -2692,8 +2693,21 @@ function renderDatabasePanelHTML(){
   const docsPanel=`
     <div class="db-subpanel">
       <h4 class="db-subtitle">Docs</h4>
-      <div class="db-catalog">
-        ${(DEFAULT_DOCS||[]).map(d=>`<div class="db-catalog-item"><strong>${escapeHtml(d.title||"Untitled")}</strong><p>${escapeHtml(d.filename||"")}</p><p>${escapeHtml(d.description||"")}</p></div>`).join("") || `<p class="note">No docs configured.</p>`}
+      <p class="note">Authorized retrieval node: assets/docs/</p>
+      <div class="docs-list">
+        ${(DEFAULT_DOCS||[]).map(d=>`
+          <div class="doc-item" data-doc-file="${escapeHtml(d.filename||"")}">
+            <div class="doc-meta">
+              <div class="title">${escapeHtml(d.title||"Untitled Document")}</div>
+              <div class="file">${escapeHtml(d.filename||"unknown.pdf")}</div>
+              <div class="row"><span class="pill">${escapeHtml(d.classification||"Unclassified")}</span></div>
+              <div class="desc">${escapeHtml(d.description||"No description.")}</div>
+            </div>
+            <div class="doc-actions">
+              <button class="btn" type="button" data-doc-open="${escapeHtml(d.filename||"")}">OPEN</button>
+              <button class="btn primary" type="button" data-doc-view="${escapeHtml(d.filename||"")}" data-doc-title="${escapeHtml(d.title||"Sealed Document")}">VIEW</button>
+            </div>
+          </div>`).join("") || `<p class="note">No docs configured.</p>`}
       </div>
     </div>`;
   const dbPanel=`
@@ -2833,8 +2847,6 @@ function renderContent(){
     ensureVarunLink(ch);
     chronoPanel.appendChild(makeBox(ch));
   }
-  chronoPanel.appendChild(renderSealedArchivesBox());
-  chronoPanel.appendChild(renderRevisionBox());
   const seedPanel=document.createElement("div");
   seedPanel.className="tab-panel";
   seedPanel.dataset.panel="seed";
