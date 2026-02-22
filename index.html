@@ -241,83 +241,6 @@
   .drawer .drawer-top .dtitle{color:var(--text);font-size:13px;letter-spacing:.6px;font-family:var(--royal);}
   body.drawer-open .backdrop{opacity:1;pointer-events:auto;}
   body.drawer-open .drawer{transform:translateX(0);}
-  .chapter-badge{
-    position:fixed;
-    right:18px;
-    bottom:18px;
-    width:54px;
-    height:54px;
-    border-radius:50%;
-    border:1px solid #2b3642;
-    background:rgba(8,12,16,.9);
-    box-shadow:0 10px 30px rgba(0,0,0,.45);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    z-index:25;
-  }
-  .chapter-badge img{
-    width:40px;
-    height:40px;
-    border-radius:50%;
-    object-fit:cover;
-    border:1px solid #24303b;
-  }
-  .badge-tooltip{
-    position:absolute;
-    right:64px;
-    bottom:6px;
-    background:#0c1117;
-    border:2px solid #2b3642;
-    color:#cfe6d6;
-    padding:8px 10px;
-    font-family:Consolas,monospace;
-    font-size:11px;
-    letter-spacing:1px;
-    text-shadow:0 1px 0 #000, 0 0 6px rgba(31,143,58,.35);
-    white-space:nowrap;
-    border-radius:6px;
-    opacity:0;
-    transform:translateY(4px);
-    pointer-events:none;
-    transition:opacity .15s ease, transform .15s ease;
-  }
-  .chapter-badge:hover .badge-tooltip,
-  .chapter-badge:focus-within .badge-tooltip{
-    opacity:1;
-    transform:translateY(0);
-  }
-  .chapter-modal{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:45;display:none;align-items:center;justify-content:center;padding:18px;}
-  .chapter-modal.open{display:flex;}
-  .chapter-panel{
-    width:min(420px,94vw);
-    background:rgba(12,16,20,.97);
-    border:1px solid var(--border);
-    border-radius:12px;
-    box-shadow:var(--shadow);
-    padding:16px;
-  }
-  .chapter-panel-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-  .chapter-panel-title{font-family:Consolas,monospace;letter-spacing:1.2px;color:#cfe6d6;text-shadow:0 1px 0 #000,0 0 6px rgba(31,143,58,.35);font-size:12px;}
-  .chapter-panel-body{display:flex;gap:12px;align-items:center;}
-  .chapter-avatar{
-    width:56px;
-    height:56px;
-    border-radius:8px;
-    border:1px solid #24303b;
-    object-fit:cover;
-    background:#0c1117;
-  }
-  .chapter-modal h4{
-    margin:0 0 6px 0;
-    font-family:Consolas,monospace;
-    letter-spacing:1.2px;
-    color:#cfe6d6;
-    text-shadow:0 1px 0 #000,0 0 6px rgba(31,143,58,.35);
-    font-size:13px;
-  }
-  .chapter-modal p{margin:0;color:var(--muted);font-size:12px;}
   .chapter-popup{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:44;display:none;align-items:center;justify-content:center;padding:18px;}
   .chapter-popup.open{display:flex;}
   .chapter-popup-panel{
@@ -799,11 +722,11 @@
   <div style="height:12px;"></div>
   <div class="chapters" id="chaptersDrawer"></div>
   <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
-      <div class="row" id="archiveTools" style="margin-top:10px;gap:8px;">
-        <button class="btn" id="exportArchive" type="button">Export Archive</button>
-        <button class="btn" id="importArchive" type="button">Import Archive</button>
+      <div class="row archive-tools" style="margin-top:10px;gap:8px;">
+        <button class="btn" type="button" data-archive-export>Export Archive</button>
+        <button class="btn" type="button" data-archive-import>Import Archive</button>
         <button class="btn" type="button" data-registry-import>Import Registry</button>
-        <input id="importFile" type="file" accept="application/json" style="display:none" />
+        <input class="archive-import-file" type="file" accept="application/json" style="display:none" />
       </div>
 </aside>
 
@@ -836,11 +759,11 @@
       <h3>CHAPTER LIST</h3>
       <div class="chapters" id="chaptersSidebar"></div>
       <div class="meta">Access: Magenta-7+<br/>Archive Node: C-402-E / VARUN<br/>Integrity: Verified</div>
-      <div class="row" id="archiveTools" style="margin-top:10px;gap:8px;">
-        <button class="btn" id="exportArchive" type="button">Export Archive</button>
-        <button class="btn" id="importArchive" type="button">Import Archive</button>
+      <div class="row archive-tools" style="margin-top:10px;gap:8px;">
+        <button class="btn" type="button" data-archive-export>Export Archive</button>
+        <button class="btn" type="button" data-archive-import>Import Archive</button>
         <button class="btn" type="button" data-registry-import>Import Registry</button>
-        <input id="importFile" type="file" accept="application/json" style="display:none" />
+        <input class="archive-import-file" type="file" accept="application/json" style="display:none" />
       </div>
     </aside>
 
@@ -869,22 +792,6 @@
   <div class="timeline-cogs" id="timelineCogs"></div>
   <div class="timeline-ship" id="timelineShip">
     <img src="https://i.imgur.com/Ld5pIxX.png" alt="" />
-  </div>
-</div>
-
-<div class="chapter-modal" id="chapterModal" role="dialog" aria-modal="true" aria-labelledby="chapterModalTitle">
-  <div class="chapter-panel">
-    <div class="chapter-panel-top">
-      <div class="chapter-panel-title">CHAPTER BADGE</div>
-      <button class="iconbtn" id="closeChapterModal" aria-label="Close chapter modal">✕</button>
-    </div>
-    <div class="chapter-panel-body">
-      <img class="chapter-avatar" src="https://64.media.tumblr.com/f377f3f0f624ba161dcb221e3db797a8/tumblr_plcj07IWnn1rep049o5_1280.png" alt="Chapter badge avatar" />
-      <div>
-        <h4 id="chapterModalTitle"><button class="btn" id="chapterModalLink" type="button">CHAPTER: Persons of Interest</button></h4>
-        <p>Noosphere Archive Node: C-402 / VARUN</p>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -2590,61 +2497,6 @@ function makeBox(ch){
   return div;
 }
 
-function renderRevisionBox(){
-  const div=document.createElement("div");
-  div.className="archive-box";
-  div.id="revision-log";
-  div.dataset.kind="revision-log";
-  const headerRow=document.createElement("div");
-  headerRow.className="box-header";
-  headerRow.innerHTML=`<span class="box-tag">REV</span><span class="box-title">Revision Log</span>`;
-  div.appendChild(headerRow);
-  ["lt","rt","lb","rb"].forEach(pos=>{
-    const c=document.createElement("span");
-    c.className=`corner-latch ${pos}`;
-    div.appendChild(c);
-  });
-  const list=state.revisions.map(r=>`<p><span class="pill" style="margin-right:8px;">${escapeHtml(r.date||"")}</span> ${escapeHtml(r.note||"")}</p>`).join("");
-  const body=document.createElement("div");
-  body.className="box-body";
-  body.innerHTML=`<div class="seed-tools"><button class="seed-import-btn" type="button" data-seed-import="events">Import Seed</button></div>`+(list||`<p class="classified">No revisions recorded.</p>`);
-  div.appendChild(body);
-  return div;
-}
-
-function renderSealedArchivesBox(){
-  const docs=structuredClone(DEFAULT_DOCS);
-  const div=document.createElement("div");
-  div.className="archive-box";
-  div.id="sealed-archives";
-  div.dataset.kind="docs";
-  const items=docs.map(doc=>`
-    <div class="doc-item" data-doc-file="${escapeHtml(doc.filename||"")}">
-      <div class="doc-meta">
-        <div class="title">${escapeHtml(doc.title||"Untitled Document")}</div>
-        <div class="file">${escapeHtml(doc.filename||"unknown.pdf")}</div>
-        <div class="row"><span class="pill">${escapeHtml(doc.classification||"Unclassified")}</span></div>
-        <div class="desc">${escapeHtml(doc.description||"No description.")}</div>
-      </div>
-      <div class="doc-actions">
-        <button class="btn" type="button" data-doc-open="${escapeHtml(doc.filename||"")}">OPEN</button>
-        <button class="btn primary" type="button" data-doc-view="${escapeHtml(doc.filename||"")}" data-doc-title="${escapeHtml(doc.title||"Sealed Document")}">VIEW</button>
-      </div>
-    </div>`).join("");
-  div.innerHTML=`
-    <div class="box-header">
-      <span class="box-tag">DOCS</span>
-      <span class="box-title">Sealed Archives</span>
-    </div>
-    <span class="corner-latch lt"></span><span class="corner-latch rt"></span><span class="corner-latch lb"></span><span class="corner-latch rb"></span>
-    <div class="box-body">
-      <p class="note">Authorized retrieval node: assets/docs/</p>
-      <div class="docs-list">${items || `<p class="classified">No documents registered.</p>`}</div>
-    </div>`;
-  return div;
-}
-
-
 function renderDatabasePanelHTML(){
   const entities=structuredClone(state.entities||[]);
   const q=dbSearch.toLowerCase();
@@ -3302,20 +3154,6 @@ openBtn.addEventListener("click",openDrawer);
 closeBtn.addEventListener("click",closeDrawer);
 backdrop.addEventListener("click",closeDrawer);
 
-/* Chapter Badge */
-const chapterBadge=document.getElementById("chapterBadge");
-const chapterModal=document.getElementById("chapterModal");
-const closeChapterModal=document.getElementById("closeChapterModal");
-const chapterModalLink=document.getElementById("chapterModalLink");
-const badgeTooltip=document.getElementById("badgeTooltip");
-
-function openChapterModal(){if(chapterModal) chapterModal.classList.add("open");}
-function closeChapterModalFn(){if(chapterModal) chapterModal.classList.remove("open");}
-function scrollToPoi(){
-  const target=document.getElementById("persons-of-interest");
-  if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
-}
-
 let registrySeedCache=null;
 async function getRegistrySeedData(){
   if(registrySeedCache) return registrySeedCache;
@@ -3487,9 +3325,9 @@ async function importRegistrySeed(){
 }
 
 /* Export / Import */
-const exportBtn=document.getElementById("exportArchive");
-const importBtn=document.getElementById("importArchive");
-const importFile=document.getElementById("importFile");
+const exportBtns=Array.from(document.querySelectorAll("button[data-archive-export]"));
+const importBtns=Array.from(document.querySelectorAll("button[data-archive-import]"));
+const importFiles=Array.from(document.querySelectorAll("input.archive-import-file"));
 const registryImportBtns=Array.from(document.querySelectorAll("button[data-registry-import]"));
 const quickExportBtn=document.getElementById("quickExportBtn");
 function exportArchiveJson(){
@@ -3501,9 +3339,15 @@ function exportArchiveJson(){
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(a.href);
 }
-if(exportBtn) exportBtn.addEventListener("click",exportArchiveJson);
+for(const btn of exportBtns) btn.addEventListener("click",exportArchiveJson);
 if(quickExportBtn) quickExportBtn.addEventListener("click",exportArchiveJson);
-if(importBtn) importBtn.addEventListener("click",()=>{ if(importFile) importFile.click(); });
+for(const btn of importBtns){
+  btn.addEventListener("click",()=>{
+    const row=btn.closest(".archive-tools");
+    const fileInput=row ? row.querySelector("input.archive-import-file") : importFiles[0];
+    if(fileInput) fileInput.click();
+  });
+}
 for(const btn of registryImportBtns){
   btn.addEventListener("click",async ()=>{
     btn.disabled=true;
@@ -3516,8 +3360,9 @@ for(const btn of registryImportBtns){
     }
   });
 }
-if(importFile) importFile.addEventListener("change",(e)=>{
-  const file=e.target.files && e.target.files[0];
+function handleImportFileSelection(e){
+  const input=e.target;
+  const file=input && input.files ? input.files[0] : null;
   if(!file) return;
   const reader=new FileReader();
   reader.onload=()=>{
@@ -3548,17 +3393,15 @@ if(importFile) importFile.addEventListener("change",(e)=>{
       saveState();
       renderAll();
       alert("Import complete.");
+      if(input) input.value="";
     }catch(err){ alert("Invalid JSON."); }
   };
   reader.readAsText(file);
-});
-if(chapterBadge) chapterBadge.addEventListener("click",openChapterModal);
-if(badgeTooltip) badgeTooltip.addEventListener("click",(e)=>{e.stopPropagation(); scrollToPoi();});
-if(closeChapterModal) closeChapterModal.addEventListener("click",closeChapterModalFn);
-if(chapterModal) chapterModal.addEventListener("click",(e)=>{if(e.target===chapterModal) closeChapterModalFn();});
-if(chapterModalLink) chapterModalLink.addEventListener("click",scrollToPoi);
+}
+for(const input of importFiles){
+  input.addEventListener("change",handleImportFileSelection);
+}
 document.addEventListener("keydown",(e)=>{
-  if(e.key==="Escape" && chapterModal && chapterModal.classList.contains("open")) closeChapterModalFn();
   if(e.key==="Escape" && docsModal && docsModal.classList.contains("open")) closeDocsModalFn();
 });
 
