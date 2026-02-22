@@ -2930,6 +2930,8 @@ function getSidebarChapters(){
   out.push({id:"database",tag:"DB",label:"Database"});
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
+    if(String(ch.id||"").startsWith("seed-")) continue;
+    if(String(ch.tag||"").toUpperCase()==="SEED") continue;
     out.push({id:ch.id,tag:ch.tag||"??",label:ch.label||ch.id});
   }
   return out;
