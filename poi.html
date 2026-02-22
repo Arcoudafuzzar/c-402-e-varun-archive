@@ -324,6 +324,7 @@ const poiPreviewImg=document.getElementById("poiPreviewImg");
 const poiPreviewCaption=document.getElementById("poiPreviewCaption");
 let activePoiCard=null;
 let activePoiSrc="";
+let editingPoiId=null;
 
 function escapeHtml(s){
   return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -389,6 +390,7 @@ function renderPersonsBox(){
           <h3>${escapeHtml(p.name||"Unknown")}<span class="poi-affiliation">${escapeHtml(p.affiliation||"Unaligned")}</span></h3>
           <div class="note">${escapeHtml(p.notes||"No notes.")}</div>
           <div class="poi-actions">
+            <button class="btn" type="button" data-act="edit-poi" data-id="${escapeHtml(p.id||"")}">Edit</button>
             <button class="btn danger" type="button" data-act="delete-poi" data-id="${escapeHtml(p.id||"")}">Delete</button>
           </div>
         </div>
@@ -450,21 +452,53 @@ document.addEventListener("submit",(e)=>{
     if(nameInput) nameInput.focus();
     return;
   }
-  state.persons.unshift({
-    id:makeId("poi"),
-    name,
-    affiliation:affiliation||"Unaligned",
-    image:image||"",
-    notes:notes||"No notes."
-  });
+  let targetId=editingPoiId;
+  if(editingPoiId){
+    const idx=state.persons.findIndex(p=>p.id===editingPoiId);
+    if(idx>=0){
+      state.persons[idx]={
+        ...state.persons[idx],
+        name,
+        affiliation:affiliation||"Unaligned",
+        image:image||"",
+        notes:notes||"No notes."
+      };
+    }else{
+      targetId=makeId("poi");
+      state.persons.unshift({
+        id:targetId,
+        name,
+        affiliation:affiliation||"Unaligned",
+        image:image||"",
+        notes:notes||"No notes."
+      });
+    }
+  }else{
+    targetId=makeId("poi");
+    state.persons.unshift({
+      id:targetId,
+      name,
+      affiliation:affiliation||"Unaligned",
+      image:image||"",
+      notes:notes||"No notes."
+    });
+  }
   saveState();
   form.reset();
+  editingPoiId=null;
+  setPoiModalMode("create");
   closePoiModalFn();
   renderAll();
-  smoothScrollTo("persons-of-interest");
+  smoothScrollTo(targetId?`poi-${targetId}`:"persons-of-interest");
 });
 
 contentRoot.addEventListener("click",(e)=>{
+  const editBtn=e.target.closest('button[data-act="edit-poi"]');
+  if(editBtn){
+    const id=editBtn.getAttribute("data-id");
+    if(id) openPoiModalFn(id);
+    return;
+  }
   const btn=e.target.closest('button[data-act="delete-poi"]');
   if(!btn) return;
   const id=btn.getAttribute("data-id");
@@ -537,12 +571,52 @@ backdrop.addEventListener("click",closeDrawer);
 const poiModal=document.getElementById("poiModal");
 const closePoiModal=document.getElementById("closePoiModal");
 const openPoiModalTop=document.getElementById("openPoiModalTop");
-function openPoiModalFn(){
+const poiModalTitle=document.getElementById("poiModalTitle");
+const poiForm=document.getElementById("poiForm");
+const poiSubmitBtn=poiForm?poiForm.querySelector('button[type="submit"]'):null;
+function setPoiModalMode(mode){
+  if(mode==="edit"){
+    if(poiModalTitle) poiModalTitle.textContent="Edit Person of Interest";
+    if(poiSubmitBtn) poiSubmitBtn.textContent="Save Changes";
+    return;
+  }
+  if(poiModalTitle) poiModalTitle.textContent="Add Person of Interest";
+  if(poiSubmitBtn) poiSubmitBtn.textContent="Add Person";
+}
+function openPoiModalFn(editId=null){
+  if(poiForm){
+    if(editId){
+      const person=(state.persons||[]).find(p=>p.id===editId);
+      if(person){
+        editingPoiId=editId;
+        setPoiModalMode("edit");
+        const nameInput=poiForm.querySelector("#poiName");
+        const affiliationInput=poiForm.querySelector("#poiAffiliation");
+        const imageInput=poiForm.querySelector("#poiImage");
+        const notesInput=poiForm.querySelector("#poiNotes");
+        if(nameInput) nameInput.value=person.name||"";
+        if(affiliationInput) affiliationInput.value=person.affiliation||"";
+        if(imageInput) imageInput.value=person.image||"";
+        if(notesInput) notesInput.value=(person.notes==="No notes."?"":(person.notes||""));
+      }else{
+        editingPoiId=null;
+        setPoiModalMode("create");
+        poiForm.reset();
+      }
+    }else{
+      editingPoiId=null;
+      setPoiModalMode("create");
+      poiForm.reset();
+    }
+  }
   poiModal.classList.add("open");
   const nameInput=document.getElementById("poiName");
   if(nameInput) nameInput.focus();
 }
-function closePoiModalFn(){poiModal.classList.remove("open");}
+function closePoiModalFn(){
+  poiModal.classList.remove("open");
+  if(!editingPoiId && poiForm) poiForm.reset();
+}
 openPoiModalTop.addEventListener("click",(e)=>{e.preventDefault(); openPoiModalFn();});
 closePoiModal.addEventListener("click",closePoiModalFn);
 poiModal.addEventListener("click",(e)=>{if(e.target===poiModal) closePoiModalFn();});
@@ -952,4 +1026,3 @@ renderAll();
 </script>
 </body>
 </html>
-
