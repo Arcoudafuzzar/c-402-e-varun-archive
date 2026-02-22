@@ -2048,11 +2048,63 @@ function loadState(){
 }
 function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
 let state=loadState();
+const bootLinkUpdatesApplied=applyConfiguredLinkUpdates(state);
+if(bootLinkUpdatesApplied>0) saveState();
 let dbSearch="";
 let selectedEntityId=(state.entities && state.entities[0])?state.entities[0].id:null;
 let dbCategory="database";
 let dbEntityEditMode=false;
 let seedToastTimer=null;
+const LINK_UPDATES=[
+  {source:"poi-p038",add_links:["ent-varun","ent-ship-constitution","ent-ordo-reductor"]},
+  {source:"poi-p039",add_links:["ent-role-lord-captain","ent-ship-constitution"]},
+  {source:"poi-mlxfrbr6-hn38k1",add_links:["ent-proto-c007","ent-proto-c012"]},
+  {source:"poi-mlxfrbr6-o1dy4v",add_links:["ent-proto-c012"]},
+  {source:"poi-mlxfrbr6-f6jqgh",add_links:["ent-proto-c007"]},
+  {
+    source:"ent-varun",
+    add_relations:[
+      {kind:"recovered",targetId:"ent-mlxfqeie-zf3k80"},
+      {kind:"disabled",targetId:"ent-mlxfqeie-0eo1wo"},
+      {kind:"defeated",targetId:"ent-mlxfqeie-cd1bus"},
+      {kind:"operates_on",targetId:"ent-ship-constitution"}
+    ]
+  },
+  {source:"ent-proto-c001",add_links:["ent-inst-i014"]},
+  {source:"ent-proto-c002",add_links:["ent-inst-i020"]},
+  {source:"ent-proto-c003",add_links:["ent-inst-i007"]},
+  {source:"ent-proto-c004",add_links:["ent-inst-i017"]},
+  {source:"ent-proto-c005",add_links:["ent-inst-i014"]},
+  {source:"ent-proto-c006",add_links:["ent-inst-i011"]},
+  {source:"ent-proto-c007",add_links:["ent-inst-i010"]},
+  {source:"ent-proto-c008",add_links:["ent-inst-i023"]},
+  {source:"ent-proto-c009",add_links:["ent-inst-i014"]},
+  {source:"ent-proto-c010",add_links:["ent-inst-i019"]},
+  {source:"ent-proto-c011",add_links:["ent-inst-i010"]},
+  {source:"ent-proto-c012",add_links:["ent-inst-i020"]},
+  {source:"ent-proto-c013",add_links:["ent-inst-i015"]},
+  {source:"ent-proto-c014",add_links:["ent-inst-i026"]},
+  {source:"ent-proto-c015",add_links:["ent-inst-i017"]},
+  {source:"ent-proto-c016",add_links:["ent-inst-i003"]},
+  {source:"ent-proto-c017",add_links:["ent-inst-i026"]},
+  {source:"ent-proto-c018",add_links:["ent-inst-i008"]},
+  {source:"ent-proto-c019",add_links:["ent-inst-i014"]},
+  {source:"ent-proto-c020",add_links:["ent-inst-i023"]},
+  {source:"ent-proto-c021",add_links:["ent-inst-i005","ent-varun"]},
+  {
+    source:"ent-inst-i021",
+    add_relations:[
+      {kind:"directed_by",targetId:"ent-varun"},
+      {kind:"overseen_by",targetId:"ent-inst-i023"}
+    ]
+  },
+  {
+    source:"ent-inst-i022",
+    add_relations:[
+      {kind:"archives",targetId:"ent-proto-c021"}
+    ]
+  }
+];
 
 function normalizeKey(value){
   return String(value||"")
@@ -2064,6 +2116,48 @@ function normalizeKey(value){
 function isPoiLinkableType(type){
   const t=normalizeKey(type);
   return t==="institution" || t==="noblehouse" || t==="protocol";
+}
+function addEntityRelationUnique(entity,kind,targetId,note=""){
+  if(!entity || !kind || !targetId) return false;
+  if(!Array.isArray(entity.relations)) entity.relations=[];
+  const exists=entity.relations.some(r=>
+    String(r.kind||"")===String(kind) &&
+    String(r.targetId||"")===String(targetId) &&
+    String(r.note||"")===String(note||"")
+  );
+  if(exists) return false;
+  entity.relations.push({kind,targetId,...(note?{note}:{})});
+  return true;
+}
+function applyConfiguredLinkUpdates(stateObj){
+  if(!stateObj || !Array.isArray(stateObj.persons) || !Array.isArray(stateObj.entities)) return 0;
+  const personById=new Map(stateObj.persons.map(p=>[p.id,p]));
+  const entityById=new Map(stateObj.entities.map(e=>[e.id,e]));
+  let applied=0;
+  for(const update of LINK_UPDATES){
+    if(!update || !update.source) continue;
+    const person=personById.get(update.source);
+    const entity=entityById.get(update.source);
+    if(person){
+      if(!Array.isArray(person.links)) person.links=[];
+      for(const targetId of (update.add_links||[])){
+        if(!targetId || person.links.includes(targetId)) continue;
+        person.links.push(targetId);
+        applied++;
+      }
+      continue;
+    }
+    if(entity){
+      for(const targetId of (update.add_links||[])){
+        if(addEntityRelationUnique(entity,"linked_to",targetId)) applied++;
+      }
+      for(const rel of (update.add_relations||[])){
+        if(!rel || !rel.kind || !rel.targetId) continue;
+        if(addEntityRelationUnique(entity,rel.kind,rel.targetId,rel.note||"")) applied++;
+      }
+    }
+  }
+  return applied;
 }
 function autoLinkPoisByContext(options={}){
   const onlyUnlinked=Boolean(options.onlyUnlinked);
@@ -3531,9 +3625,10 @@ async function importRegistrySeed(){
   registryRowsAdded+=mergeUniqueRows(reg.house_alliances,Array.isArray(seed.House_Alliances)?seed.House_Alliances:[],r=>normalizeKey(`${r.House_A}|${r.House_B}|${r.Basis}`));
 
   const autoLinked=autoLinkPoisByContext({onlyUnlinked:false});
+  const configuredLinked=applyConfiguredLinkUpdates(state);
   saveState();
   renderAll();
-  showSeedToast(`Imported ${personsAdded+entitiesAdded+registryRowsAdded} items (+${autoLinked} auto-links)`);
+  showSeedToast(`Imported ${personsAdded+entitiesAdded+registryRowsAdded} items (+${autoLinked} auto-links, +${configuredLinked} configured links)`);
 }
 
 /* Export / Import */
@@ -3602,9 +3697,10 @@ function handleImportFileSelection(e){
             }
           : structuredClone(EMPTY_REGISTRY)
       };
+      const configuredLinked=applyConfiguredLinkUpdates(state);
       saveState();
       renderAll();
-      alert("Import complete.");
+      alert(configuredLinked>0?`Import complete. Applied ${configuredLinked} configured links.`:"Import complete.");
       if(input) input.value="";
     }catch(err){ alert("Invalid JSON."); }
   };
@@ -3932,6 +4028,7 @@ if(hasAdminUI){
       entities:structuredClone(DEFAULT_ENTITIES),
       registry:structuredClone(EMPTY_REGISTRY)
     };
+    applyConfiguredLinkUpdates(state);
     saveState(); renderAll(); renderAdminLists(); resetChapterForm(); resetRevForm();
   });
   importBtn.addEventListener("click",()=>{
@@ -3957,7 +4054,9 @@ if(hasAdminUI){
             }
           : structuredClone(EMPTY_REGISTRY)
       };
-      saveState(); renderAll(); renderAdminLists(); resetChapterForm(); resetRevForm(); alert("Import complete.");
+      const configuredLinked=applyConfiguredLinkUpdates(state);
+      saveState(); renderAll(); renderAdminLists(); resetChapterForm(); resetRevForm();
+      alert(configuredLinked>0?`Import complete. Applied ${configuredLinked} configured links.`:"Import complete.");
     }catch(e){alert("Invalid JSON.");}
   });
 
