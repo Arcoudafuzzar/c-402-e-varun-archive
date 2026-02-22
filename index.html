@@ -2246,6 +2246,12 @@ function parseSeedText(text){
       });
     }
   }
+  // Constitution co-author kept in POI seed imports as a canonical person entry.
+  persons.push({
+    name:"Titus Cornelius Scipio",
+    affiliation:"Adeptus Astartes / Ultramarines",
+    notes:"Constitution co-author; Veteran of the Ultramarine Chapter."
+  });
 
   const places=["Thalasson V","Hive Secundus"].filter(p=>src.toLowerCase().includes(p.toLowerCase()));
   const artifacts=["STC fragment","EMP pulse","warp-tainted generator","controlled detonation","ancient guardian"]
@@ -2788,6 +2794,8 @@ function renderContent(){
   chronoPanel.appendChild(h2);
   for(const ch of state.chapters){
     if(ch.id==="profile") continue;
+    if(String(ch.id||"").startsWith("seed-")) continue;
+    if(String(ch.tag||"").toUpperCase()==="SEED") continue;
     ensureVarunLink(ch);
     chronoPanel.appendChild(makeBox(ch));
   }
@@ -3777,7 +3785,11 @@ let lastScrollY=window.scrollY;
 let shipResetTimer=null;
 
 function buildTimeline(){
-  const chapters=state.chapters.filter(c=>c.id!=="profile");
+  const chapters=state.chapters.filter(c=>
+    c.id!=="profile" &&
+    !String(c.id||"").startsWith("seed-") &&
+    String(c.tag||"").toUpperCase()!=="SEED"
+  );
   timelineTargets=chapters.map(c=>c.id);
   timelineCogs.innerHTML=chapters.map(c=>`<button class="timeline-cog" data-target="${c.id}" aria-label="${escapeHtml(c.label||c.id)}"></button>`).join("");
 }
