@@ -517,6 +517,17 @@
   .poi-tab-item{border:1px solid #24303b;border-radius:10px;background:rgba(12,16,20,.75);padding:10px;display:flex;justify-content:space-between;gap:10px;}
   .poi-tab-item a{color:#8fe3a6;text-decoration:none;}
   .poi-tab-item a:hover{text-decoration:underline;color:#c7ffd8;}
+  .poi-links{margin-top:8px;display:flex;flex-direction:column;gap:8px;}
+  .poi-link-select{
+    flex:1;
+    border-radius:10px;
+    border:1px solid #2b3642;
+    background:rgba(8,12,16,.95);
+    color:var(--text);
+    padding:8px 10px;
+    font-family:inherit;
+    font-size:12px;
+  }
   .db-layout{display:grid;grid-template-columns:1fr 1.4fr;gap:14px;}
   @media (max-width:900px){.db-layout{grid-template-columns:1fr;}}
   .db-panel{border:1px solid #24303b;border-radius:12px;background:rgba(12,16,20,.75);padding:12px;}
@@ -2040,6 +2051,7 @@ let state=loadState();
 let dbSearch="";
 let selectedEntityId=(state.entities && state.entities[0])?state.entities[0].id:null;
 let dbCategory="database";
+let dbEntityEditMode=false;
 let seedToastTimer=null;
 
 function normalizeKey(value){
@@ -2048,6 +2060,10 @@ function normalizeKey(value){
     .replace(/[^a-z0-9\s-]/g," ")
     .replace(/\s+/g," ")
     .trim();
+}
+function isPoiLinkableType(type){
+  const t=normalizeKey(type);
+  return t==="institution" || t==="noblehouse" || t==="protocol";
 }
 function slugifySeed(value){
   return normalizeKey(value).replace(/\s+/g,"-") || "seed";
@@ -2511,6 +2527,7 @@ function renderDatabasePanelHTML(){
 
   const current=entities.find(e=>e.id===selectedEntityId) || entities[0];
   if(current && !selectedEntityId) selectedEntityId=current.id;
+  if(dbEntityEditMode && !current) dbEntityEditMode=false;
   const tags=(current&&current.tags||[]).map(t=>`<span class="db-tag">${escapeHtml(t)}</span>`).join("");
   const fields=current&&current.fields?Object.entries(current.fields).map(([k,v])=>`<p><strong>${escapeHtml(k)}:</strong> ${escapeHtml(String(v))}</p>`).join(""):`<p class="note">No fields recorded.</p>`;
   const relations=current&&current.relations?current.relations.map(r=>{
@@ -2582,12 +2599,33 @@ function renderDatabasePanelHTML(){
         <h4>Details</h4>
         ${current?`
           <div class="db-fields">
-            <p><strong>Name:</strong> ${escapeHtml(current.name||"Unnamed")}</p>
-            <p><strong>Type:</strong> ${escapeHtml(current.type||"Unknown")}</p>
-            <div class="db-tags">${tags || "<span class=\"note\">No tags.</span>"}</div>
-            <p>${escapeHtml(current.description||"No description.")}</p>
-            <div class="db-fields">${fields}</div>
-            <div class="db-fields"><p><strong>Relations:</strong></p>${relations}</div>
+            ${dbEntityEditMode?`
+              <form id="dbEditForm" class="field" data-entity-id="${escapeHtml(current.id)}">
+                <label for="dbEditType">Type</label>
+                <input id="dbEditType" name="type" type="text" maxlength="80" value="${escapeHtml(current.type||"")}" required />
+                <label for="dbEditName">Name</label>
+                <input id="dbEditName" name="name" type="text" maxlength="120" value="${escapeHtml(current.name||"")}" required />
+                <label for="dbEditTags">Tags (comma separated)</label>
+                <input id="dbEditTags" name="tags" type="text" maxlength="200" value="${escapeHtml((current.tags||[]).join(", "))}" />
+                <label for="dbEditDesc">Description</label>
+                <textarea id="dbEditDesc" name="description" maxlength="1200">${escapeHtml(current.description||"")}</textarea>
+                <div class="row" style="margin-top:10px;">
+                  <button class="btn primary" type="submit">Save Entity</button>
+                  <button class="btn" type="button" data-db-act="cancel-edit-entity">Cancel</button>
+                </div>
+              </form>
+            `:`
+              <p><strong>Name:</strong> ${escapeHtml(current.name||"Unnamed")}</p>
+              <p><strong>Type:</strong> ${escapeHtml(current.type||"Unknown")}</p>
+              <div class="db-tags">${tags || "<span class=\"note\">No tags.</span>"}</div>
+              <p>${escapeHtml(current.description||"No description.")}</p>
+              <div class="db-fields">${fields}</div>
+              <div class="db-fields"><p><strong>Relations:</strong></p>${relations}</div>
+              <div class="row" style="margin-top:10px;">
+                <button class="btn" type="button" data-db-act="edit-entity" data-entity-id="${escapeHtml(current.id)}">Edit</button>
+                <button class="btn danger" type="button" data-db-act="delete-entity" data-entity-id="${escapeHtml(current.id)}">Delete</button>
+              </div>
+            `}
           </div>`:`<p class="note">No entity selected.</p>`}
       </section>
     </div>`;
@@ -2714,6 +2752,11 @@ function renderContent(){
   poiPanel.appendChild(poiSeedTools);
   const list=document.createElement("div");
   list.className="poi-tab-list";
+  const entityById=new Map((state.entities||[]).map(e=>[e.id,e]));
+  const linkableEntities=(state.entities||[]).filter(e=>isPoiLinkableType(e.type));
+  const linkableOptions=linkableEntities
+    .map(e=>`<option value="${escapeHtml(e.id)}">${escapeHtml(`${e.name||"Unnamed"} (${e.type||"Unknown"})`)}</option>`)
+    .join("");
   const people=structuredClone(state.persons||[]).sort((a,b)=>{
     const an=String(a.name||"").toLowerCase();
     const bn=String(b.name||"").toLowerCase();
@@ -2721,8 +2764,39 @@ function renderContent(){
   });
   list.innerHTML=people.map(p=>`
     <div class="poi-tab-item">
-      <a href="poi.html#${p.id?`poi-${p.id}`:"persons-of-interest"}">${escapeHtml(p.name||"Unknown")}</a>
-      <span class="note">${escapeHtml(p.affiliation||"Unaligned")}</span>
+      <div style="min-width:0;flex:1;">
+        <a href="poi.html#${p.id?`poi-${p.id}`:"persons-of-interest"}">${escapeHtml(p.name||"Unknown")}</a>
+        <span class="note">${escapeHtml(p.affiliation||"Unaligned")}</span>
+        <div class="poi-links">
+          <div class="note">
+            Linked: ${
+              (Array.isArray(p.links)?p.links:[])
+                .map(id=>entityById.get(id))
+                .filter(Boolean)
+                .map(e=>escapeHtml(e.name||"Unknown"))
+                .join(", ") || "None"
+            }
+          </div>
+          ${p.id?`
+            <div class="row">
+              <select class="poi-link-select" data-poi-link-select="${escapeHtml(p.id||"")}">
+                <option value="">Select institution / house / protocol</option>
+                ${linkableOptions}
+              </select>
+              <button class="btn" type="button" data-act="poi-link-add" data-person-id="${escapeHtml(p.id||"")}">Link</button>
+            </div>
+            <div class="row">
+              ${
+                (Array.isArray(p.links)?p.links:[])
+                  .map(id=>entityById.get(id))
+                  .filter(Boolean)
+                  .map(e=>`<button class="btn danger" type="button" data-act="poi-link-remove" data-person-id="${escapeHtml(p.id||"")}" data-entity-id="${escapeHtml(e.id||"")}">Unlink ${escapeHtml(e.name||"Entry")}</button>`)
+                  .join("") || ""
+              }
+            </div>
+          `:`<div class="note">Entry has no ID yet; create/edit it in POI Registry to enable linking.</div>`}
+        </div>
+      </div>
     </div>`).join("") || `<p class="classified">No persons recorded. Use the POI Registry to add entries.</p>`;
   poiPanel.appendChild(list);
   const link=document.createElement("p");
@@ -3064,18 +3138,108 @@ contentRoot.addEventListener("input",(e)=>{
   updateDatabasePanel();
 });
 contentRoot.addEventListener("click",(e)=>{
+  const addPoiLinkBtn=e.target.closest('button[data-act="poi-link-add"]');
+  if(addPoiLinkBtn){
+    const personId=addPoiLinkBtn.getAttribute("data-person-id")||"";
+    const row=addPoiLinkBtn.closest(".row");
+    const select=row?row.querySelector("select[data-poi-link-select]"):null;
+    const entityId=select?String(select.value||"").trim():"";
+    if(!personId || !entityId) return;
+    const person=state.persons.find(p=>p.id===personId);
+    const entity=state.entities.find(en=>en.id===entityId);
+    if(!person || !entity || !isPoiLinkableType(entity.type)) return;
+    if(!Array.isArray(person.links)) person.links=[];
+    if(!person.links.includes(entityId)) person.links.push(entityId);
+    saveState();
+    renderAll();
+    setPageTab("poi");
+    return;
+  }
+  const removePoiLinkBtn=e.target.closest('button[data-act="poi-link-remove"]');
+  if(removePoiLinkBtn){
+    const personId=removePoiLinkBtn.getAttribute("data-person-id")||"";
+    const entityId=removePoiLinkBtn.getAttribute("data-entity-id")||"";
+    const person=state.persons.find(p=>p.id===personId);
+    if(!person || !Array.isArray(person.links)) return;
+    person.links=person.links.filter(id=>id!==entityId);
+    saveState();
+    renderAll();
+    setPageTab("poi");
+    return;
+  }
   const catBtn=e.target.closest("button[data-db-category]");
   if(catBtn){
     dbCategory=catBtn.getAttribute("data-db-category")||"database";
+    dbEntityEditMode=false;
     updateDatabasePanel();
+    return;
+  }
+  const dbEditBtn=e.target.closest('button[data-db-act="edit-entity"]');
+  if(dbEditBtn){
+    dbEntityEditMode=true;
+    updateDatabasePanel();
+    return;
+  }
+  const dbCancelEditBtn=e.target.closest('button[data-db-act="cancel-edit-entity"]');
+  if(dbCancelEditBtn){
+    dbEntityEditMode=false;
+    updateDatabasePanel();
+    return;
+  }
+  const dbDeleteBtn=e.target.closest('button[data-db-act="delete-entity"]');
+  if(dbDeleteBtn){
+    const entityId=dbDeleteBtn.getAttribute("data-entity-id")||"";
+    if(!entityId) return;
+    const target=state.entities.find(e2=>e2.id===entityId);
+    const label=target?target.name:entityId;
+    if(!confirm(`Delete entity "${label}"?`)) return;
+    state.entities=state.entities.filter(e2=>e2.id!==entityId);
+    for(const e2 of state.entities){
+      if(Array.isArray(e2.relations)){
+        e2.relations=e2.relations.filter(r=>r.targetId!==entityId);
+      }
+    }
+    for(const p of (state.persons||[])){
+      if(Array.isArray(p.links)) p.links=p.links.filter(id=>id!==entityId);
+    }
+    if(selectedEntityId===entityId){
+      selectedEntityId=(state.entities[0]&&state.entities[0].id)||null;
+    }
+    dbEntityEditMode=false;
+    saveState();
+    renderAll();
+    setPageTab("database");
     return;
   }
   const item=e.target.closest(".db-item[data-entity-id]");
   if(!item) return;
   selectedEntityId=item.getAttribute("data-entity-id");
+  dbEntityEditMode=false;
   updateDatabasePanel();
 });
 contentRoot.addEventListener("submit",(e)=>{
+  const editForm=e.target.closest("#dbEditForm");
+  if(editForm){
+    e.preventDefault();
+    const entityId=editForm.getAttribute("data-entity-id")||"";
+    const target=state.entities.find(en=>en.id===entityId);
+    if(!target) return;
+    const fd=new FormData(editForm);
+    const type=String(fd.get("type")||"").trim();
+    const name=String(fd.get("name")||"").trim();
+    const tags=String(fd.get("tags")||"").split(",").map(s=>s.trim()).filter(Boolean);
+    const description=String(fd.get("description")||"").trim();
+    if(!type || !name) return;
+    target.type=type;
+    target.name=name;
+    target.tags=tags;
+    target.description=description;
+    dbEntityEditMode=false;
+    saveState();
+    renderAll();
+    setPageTab("database");
+    return;
+  }
   const form=e.target.closest("#dbAddForm");
   if(!form) return;
   e.preventDefault();
