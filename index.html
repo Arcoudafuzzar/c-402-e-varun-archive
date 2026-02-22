@@ -834,6 +834,7 @@
         <button class="page-tab" id="tabChrono" data-tab="chrono" type="button">Chronological Record</button>
         <button class="page-tab" id="tabPoi" data-tab="poi" type="button">POI Directory</button>
         <button class="page-tab" id="tabDatabase" data-tab="database" type="button">Database</button>
+        <button class="page-tab" id="tabSeed" data-tab="seed" type="button">Seed Appendix</button>
         <button class="page-tab" id="tabConstitution" data-tab="constitution" type="button">Constitution</button>
       </div>
       <div id="contentRoot"></div>
@@ -2613,6 +2614,14 @@ function renderDatabasePanelHTML(){
     const tname=target?target.name:r.targetId;
     return `<p><span class="pill">${escapeHtml(r.kind||"rel")}</span> ${escapeHtml(tname||"Unknown")}${r.note?` ? ${escapeHtml(r.note)}`:""}</p>`;
   }).join(""):`<p class="note">No relations recorded.</p>`;
+  const seed=parseSeedText(SEED_TEXT);
+  const seedCats=`
+    <p><strong>Seed Chapters:</strong> ${(seed.chapters||[]).map(c=>escapeHtml(c.title)).join("; ") || "None"}</p>
+    <p><strong>Seed POI:</strong> ${(seed.persons||[]).map(p=>escapeHtml(p.name)).join("; ") || "None"}</p>
+    <p><strong>Seed Places:</strong> ${(seed.places||[]).map(p=>escapeHtml(p)).join("; ") || "None"}</p>
+    <p><strong>Seed Artifacts/Events:</strong> ${(seed.artifacts||[]).map(a=>escapeHtml(a)).join("; ") || "None"}</p>`;
+  const revCats=(state.revisions||[]).map(r=>`<p><span class="pill">REV</span> ${escapeHtml(r.date||"Undated")} :: ${escapeHtml(r.note||"")}</p>`).join("") || `<p class="note">No revisions recorded.</p>`;
+  const docCats=(DEFAULT_DOCS||[]).map(d=>`<p><span class="pill">DOC</span> ${escapeHtml(d.title||"Untitled")} <span class="note">(${escapeHtml(d.filename||"")})</span></p>`).join("") || `<p class="note">No docs configured.</p>`;
 
   return `
     <h2>Database</h2>
@@ -2648,7 +2657,22 @@ function renderDatabasePanelHTML(){
             <div class="db-fields"><p><strong>Relations:</strong></p>${relations}</div>
           </div>`:`<p class="note">No entity selected.</p>`}
       </section>
-    </div>`;
+    </div>
+    <section class="db-panel" style="margin-top:12px;">
+      <h4>Subcategories</h4>
+      <div class="db-fields">
+        <p><strong>Seeds</strong></p>
+        ${seedCats}
+      </div>
+      <div class="db-fields">
+        <p><strong>Revision Log</strong></p>
+        ${revCats}
+      </div>
+      <div class="db-fields">
+        <p><strong>Docs</strong></p>
+        ${docCats}
+      </div>
+    </section>`;
 }
 
 
@@ -2737,7 +2761,13 @@ function renderContent(){
   }
   chronoPanel.appendChild(renderSealedArchivesBox());
   chronoPanel.appendChild(renderRevisionBox());
-  chronoPanel.appendChild(renderSeedAppendixBox());
+  const seedPanel=document.createElement("div");
+  seedPanel.className="tab-panel";
+  seedPanel.dataset.panel="seed";
+  const seedH2=document.createElement("h2");
+  seedH2.textContent="Seed Appendix";
+  seedPanel.appendChild(seedH2);
+  seedPanel.appendChild(renderSeedAppendixBox());
 
   const poiPanel=document.createElement("div");
   poiPanel.className="tab-panel";
@@ -2780,6 +2810,7 @@ function renderContent(){
   tabs.appendChild(chronoPanel);
   tabs.appendChild(poiPanel);
   tabs.appendChild(dbPanel);
+  tabs.appendChild(seedPanel);
   tabs.appendChild(constitutionPanel);
   contentRoot.appendChild(tabs);
   autolinkEntities(contentRoot);
@@ -2892,6 +2923,8 @@ function smoothScrollTo(id){
   if(id==="database"){
     setPageTab("database");
     updateDatabasePanel();
+  } else if(id==="seed-appendix"){
+    setPageTab("seed");
   } else if(id==="constitution"){
     setPageTab("constitution");
   } else {
@@ -3024,6 +3057,14 @@ document.addEventListener("click",(e)=>{
     e.preventDefault();
     setPageTab("chrono");
     const targetEl=document.getElementById("sealed-archives");
+    if(targetEl) targetEl.scrollIntoView({behavior:"smooth",block:"start"});
+    closeDrawer();
+    return;
+  }
+  if(targetId==="seed-appendix"){
+    e.preventDefault();
+    setPageTab("seed");
+    const targetEl=document.getElementById("seed-appendix");
     if(targetEl) targetEl.scrollIntoView({behavior:"smooth",block:"start"});
     closeDrawer();
     return;
@@ -3647,6 +3688,7 @@ const tabProfile=document.getElementById("tabProfile");
 const tabChrono=document.getElementById("tabChrono");
 const tabPoi=document.getElementById("tabPoi");
 const tabDatabase=document.getElementById("tabDatabase");
+const tabSeed=document.getElementById("tabSeed");
 const tabConstitution=document.getElementById("tabConstitution");
 function setPageTab(name){
   localStorage.setItem("varunActiveTab",name);
@@ -3656,6 +3698,7 @@ function setPageTab(name){
   tabChrono.classList.toggle("active",name==="chrono");
   tabPoi.classList.toggle("active",name==="poi");
   tabDatabase.classList.toggle("active",name==="database");
+  if(tabSeed) tabSeed.classList.toggle("active",name==="seed");
   tabConstitution.classList.toggle("active",name==="constitution");
   if(name==="database") updateDatabasePanel();
 }
@@ -3663,9 +3706,10 @@ tabProfile.addEventListener("click",()=>setPageTab("profile"));
 tabChrono.addEventListener("click",()=>setPageTab("chrono"));
 tabPoi.addEventListener("click",()=>setPageTab("poi"));
 tabDatabase.addEventListener("click",()=>setPageTab("database"));
+if(tabSeed) tabSeed.addEventListener("click",()=>setPageTab("seed"));
 tabConstitution.addEventListener("click",()=>setPageTab("constitution"));
 const savedTab=localStorage.getItem("varunActiveTab");
-if(savedTab && ["profile","chrono","poi","database","constitution"].includes(savedTab)) setPageTab(savedTab);
+if(savedTab && ["profile","chrono","poi","database","seed","constitution"].includes(savedTab)) setPageTab(savedTab);
 
 /* Bezel Icons */
 const iconInquisition=document.getElementById("iconInquisition");
