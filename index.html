@@ -872,11 +872,6 @@
   </div>
 </div>
 
-<button class="chapter-badge" id="chapterBadge" aria-haspopup="dialog" aria-controls="chapterModal" aria-label="Open chapter badge">
-  <img src="https://64.media.tumblr.com/f377f3f0f624ba161dcb221e3db797a8/tumblr_plcj07IWnn1rep049o5_1280.png" alt="Chapter badge" />
-  <span class="badge-tooltip" id="badgeTooltip">CHAPTER: Persons of Interest</span>
-</button>
-
 <div class="chapter-modal" id="chapterModal" role="dialog" aria-modal="true" aria-labelledby="chapterModalTitle">
   <div class="chapter-panel">
     <div class="chapter-panel-top">
@@ -3314,8 +3309,8 @@ const closeChapterModal=document.getElementById("closeChapterModal");
 const chapterModalLink=document.getElementById("chapterModalLink");
 const badgeTooltip=document.getElementById("badgeTooltip");
 
-function openChapterModal(){chapterModal.classList.add("open");}
-function closeChapterModalFn(){chapterModal.classList.remove("open");}
+function openChapterModal(){if(chapterModal) chapterModal.classList.add("open");}
+function closeChapterModalFn(){if(chapterModal) chapterModal.classList.remove("open");}
 function scrollToPoi(){
   const target=document.getElementById("persons-of-interest");
   if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
@@ -3557,13 +3552,13 @@ if(importFile) importFile.addEventListener("change",(e)=>{
   };
   reader.readAsText(file);
 });
-chapterBadge.addEventListener("click",openChapterModal);
-badgeTooltip.addEventListener("click",(e)=>{e.stopPropagation(); scrollToPoi();});
-closeChapterModal.addEventListener("click",closeChapterModalFn);
-chapterModal.addEventListener("click",(e)=>{if(e.target===chapterModal) closeChapterModalFn();});
-chapterModalLink.addEventListener("click",scrollToPoi);
+if(chapterBadge) chapterBadge.addEventListener("click",openChapterModal);
+if(badgeTooltip) badgeTooltip.addEventListener("click",(e)=>{e.stopPropagation(); scrollToPoi();});
+if(closeChapterModal) closeChapterModal.addEventListener("click",closeChapterModalFn);
+if(chapterModal) chapterModal.addEventListener("click",(e)=>{if(e.target===chapterModal) closeChapterModalFn();});
+if(chapterModalLink) chapterModalLink.addEventListener("click",scrollToPoi);
 document.addEventListener("keydown",(e)=>{
-  if(e.key==="Escape" && chapterModal.classList.contains("open")) closeChapterModalFn();
+  if(e.key==="Escape" && chapterModal && chapterModal.classList.contains("open")) closeChapterModalFn();
   if(e.key==="Escape" && docsModal && docsModal.classList.contains("open")) closeDocsModalFn();
 });
 
