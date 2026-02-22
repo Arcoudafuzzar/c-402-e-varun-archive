@@ -2098,6 +2098,66 @@ function normalizeKey(value){
 function slugifySeed(value){
   return normalizeKey(value).replace(/\s+/g,"-") || "seed";
 }
+function extractProfileFactsFromHtml(html){
+  const lines=htmlTextLines(html);
+  const facts={designation:"",roles:[],mandate:"",vessel:"",status:"",archiveSpan:"",notes:[]};
+  const roleSet=new Set();
+  for(const line of lines){
+    const m=line.match(/^([^:]{2,40}):\s*(.+)$/);
+    if(!m) continue;
+    const key=normalizeKey(m[1]);
+    const val=String(m[2]||"").trim();
+    if(!val) continue;
+    if(key==="designation"){facts.designation=val; continue;}
+    if(key==="titles" || key==="titles and offices" || key==="rank" || key==="omnissian title"){
+      val.split(/[;,]/).map(s=>s.trim()).filter(Boolean).forEach(r=>roleSet.add(r));
+      continue;
+    }
+    if(key==="current mandate" || key==="mandate"){facts.mandate=val; continue;}
+    if(key==="operating theater" || key==="vessel"){facts.vessel=val; continue;}
+    if(key==="status"){facts.status=val; continue;}
+    if(key==="archive span"){facts.archiveSpan=val; continue;}
+    if(key==="journal addendum" || key==="archivist notes"){facts.notes.push(val);}
+  }
+  facts.roles=[...roleSet];
+  return facts;
+}
+function dedupeRoles(roles){
+  const out=[];
+  const seen=new Set();
+  for(const r of roles||[]){
+    const key=normalizeKey(r);
+    if(!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(r.trim());
+  }
+  return out;
+}
+function buildProfileJournalTemplate(facts){
+  const designation=facts.designation || "C-402 Epsilon Varun";
+  const roles=dedupeRoles(facts.roles && facts.roles.length ? facts.roles : [
+    "Magos Biologis and Explorator of the Adeptus Mechanicus",
+    "Veteran Artifex of the Ordo Reductor",
+    "Master of Medicae Arts and Xenobiology",
+    "Inquisitor's Ally",
+    "Data-Savant",
+    "Custodian of the Armorium"
+  ]);
+  const mandate=facts.mandate || "Recover, sanctify, and weaponize relic-grade knowledge for Imperial continuity.";
+  const vessel=facts.vessel || "The Last Rose // Forge-adjacent expeditionary theater";
+  const status=facts.status || "Active // Classified";
+  const archiveSpan=facts.archiveSpan || "50 Years Prior to Current Imperial Date";
+  const addendum=(facts.notes && facts.notes.length) ? facts.notes[0] : "Transmission sealed under Magenta-7 clearance. Machine-spirit compliance remains acceptable.";
+  return `<p><strong>Designation:</strong> ${escapeHtml(designation)}</p>
+<p><strong>Journal Entry:</strong> I, ${escapeHtml(designation)}, submit this memorandum to the Omnissian archive. Let this record stand as measured proof of function, loyalty, and ascent through steel and doctrine.</p>
+<p><strong>Titles and Offices:</strong> ${escapeHtml(roles.join("; "))}</p>
+<p><strong>Current Mandate:</strong> ${escapeHtml(mandate)}</p>
+<p><strong>Operating Theater:</strong> ${escapeHtml(vessel)}</p>
+<p><strong>Status:</strong> ${escapeHtml(status)}</p>
+<p><strong>Archive Span:</strong> ${escapeHtml(archiveSpan)}</p>
+<p><strong>Journal Addendum:</strong> ${escapeHtml(addendum)}</p>
+<p><strong>Closing Canticle:</strong> "By cog and calculus, I remain the instrument of ordered revelation."</p>`;
+}
 function htmlTextLines(html){
   const tmp=document.createElement("div");
   tmp.innerHTML=String(html||"");
@@ -2212,20 +2272,22 @@ function importSeed(mode="all"){
       profile={id:"profile",tag:"CORE",label:"Profile Node",body:""};
       state.chapters.unshift(profile);
     }
-    const existing=normalizeKey(profile.body);
-    const additions=[];
-    if(seed.profile.name && !existing.includes(normalizeKey(seed.profile.name))){
-      additions.push(`<p><strong>Designation:</strong> ${escapeHtml(seed.profile.name)}</p>`);
-    }
-    if(seed.profile.roles && seed.profile.roles.length){
-      const missingRoles=seed.profile.roles.filter(role=>!existing.includes(normalizeKey(role)));
-      if(missingRoles.length){
-        additions.push(`<p><strong>Titles:</strong> ${escapeHtml(missingRoles.join("; "))}</p>`);
+    const facts=extractProfileFactsFromHtml(profile.body||"");
+    let changed=0;
+    if(seed.profile.name && normalizeKey(facts.designation)!==normalizeKey(seed.profile.name)){
+      if(!facts.designation){
+        facts.designation=seed.profile.name;
+        changed+=1;
       }
     }
-    if(additions.length){
-      profile.body=(profile.body||"")+additions.join("");
-      counts.profile+=additions.length;
+    const mergedRoles=dedupeRoles([...(facts.roles||[]), ...(seed.profile.roles||[])]);
+    if(mergedRoles.length !== (facts.roles||[]).length){
+      facts.roles=mergedRoles;
+      changed+=1;
+    }
+    if(changed || !profile.body){
+      profile.body=buildProfileJournalTemplate(facts);
+      counts.profile+=changed||1;
     }
   }
 
@@ -2742,23 +2804,20 @@ function ensureVarunLink(ch){
 
 function ensureProfileText(ch){
   if(!ch || ch.id!=="profile") return;
-  const body=String(ch.body||"");
-  if(body.includes("Vox‑Triumphant of the Red Cog")) return;
-  ch.body=`<p><strong>Designation:</strong> C-402 Epsilon Varun</p>
-<p><strong>Omnissian Title:</strong> Vox‑Triumphant of the Red Cog</p>
-<p><strong>Rank:</strong> Magos Dominus // Exploratory Division</p>
-<p><strong>Forge‑Tithe:</strong> Mars // Sub‑Node Ferrum‑7</p>
-<p><strong>Biotopic State:</strong> 78.4% sanctified augmentation, 21.6% residual flesh</p>
-<p><strong>Self‑Praise Litany:</strong> “I am the calibrated will of Mars; my circuits do not err.”</p>
-<p><strong>Self‑Praise Litany:</strong> “Through me the Omnissiah is quantified; through my rites, relics awaken.”</p>
-<p><strong>Primary Wargear & Rites:</strong> Delta‑III mechadendrite cluster (Injector, Plasma micro‑torch, Data‑spike), Mk.IV cognition lattice, dual‑auspex servo‑skull</p>
-<p><strong>Mandate:</strong> Recover and exalt the relics of the Dark Age into present utility</p>
-<p><strong>Vessel:</strong> The Last Rose (Manufactorum Oversight)</p>
-<p><strong>Status:</strong> Active // Classified</p>
-<p><strong>Archive Span:</strong> 50 Years Prior to Current Imperial Date</p>
-<p><strong>Archivist Notes:</strong> Tissue excision logged at 12.03% mass, synaptic relay latency 0.014s, ocular augury variance ±0.7%. Cogitation cycles audited 3,600/hr under Rite‑Protocol 9.17‑Theta. Current sanctity index: 96.2%. Seal‑code: Magenta‑7 // Verified.</p>
-<p><strong>Reliquary Index:</strong> STC fragment integrity 23.0% (Ref: Vault‑Sigma/IX‑A), memory shard provenance 61.4% (Ref: Canticle of Glass, Vol. IV), noosphere bleed detected 0.003% during Rite of the Sealed Cog.</p>
-<p><strong>Unknown Lore Addendum:</strong> Cross‑reference “Annals of K‑Tor // Basilikon Echo”, datum‑lock pending (Redactor‑Magi: 3). Observed variance in Ossuary‑Sigil 44‑Kappa, hypothesis logged for later exegesis.</p>`;
+  const body=String(ch.body||"").trim();
+  const defaultProfile=String(DEFAULT_CHAPTERS.find(x=>x.id==="profile")?.body||"").trim();
+  const titlesCount=(body.match(/<strong>\s*Titles?:/gi)||[]).length + (body.match(/Titles and Offices:/gi)||[]).length;
+  const shouldRebuild=
+    !body ||
+    normalizeKey(body)===normalizeKey(defaultProfile) ||
+    body.includes("Vox") ||
+    body.includes("Self") ||
+    titlesCount>1 ||
+    body.includes("<strong>Titles:</strong>");
+  if(!shouldRebuild) return;
+  const facts=extractProfileFactsFromHtml(body);
+  if(!facts.designation) facts.designation="C-402 Epsilon Varun";
+  ch.body=buildProfileJournalTemplate(facts);
 }
 
 const chaptersSidebar=document.getElementById("chaptersSidebar");
